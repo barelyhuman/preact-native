@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "checkJs": true,
+    "jsx": "preserve",
+    "lib": ["dom", "es5"],
+    "skipLibCheck": true,
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "moduleResolution": "node",
+    "target": "es5",
+    "outDir": "dist"
+  },
+  "include": ["src/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "node_modules",
+    "./node_modules",
+    "./node_modules/*"
+  ]
+}

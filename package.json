@@ -22,13 +22,13 @@
   "unpkg": "dist/index.min.js",
   "module": "dist/index.module.js",
   "source": "src/index.js",
-  "types": "src/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "src",
     "dist"
   ],
   "scripts": {
-    "build": "microbundle build --raw --no-generateTypes -f cjs,esm,umd",
+    "build": "microbundle build --raw --generateTypes -f cjs,esm,umd",
     "fix": "npx prettier --write .",
     "next": "bumpp --tag --commit"
   },
