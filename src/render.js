@@ -28,14 +28,14 @@ function injectPreactHooks() {
 
   options.diffed = vnode => {
     oldAfterDiff && oldAfterDiff(vnode)
-    commitEmitter.emit('redraw')
+    if (!vnode.parentNode) {
+      commitEmitter.emit('redraw')
+    }
   }
 }
 
 function render(node) {
-  console.log({ node, exec: node() })
   preactRender(h(node, {}), document.body)
-  console.log(document.body)
   const _node = build(document.body.childNodes[0])
 
   return {
@@ -65,6 +65,7 @@ function _attachNativeElement(el) {
 }
 
 function build(baseNode) {
+  if (!baseNode) return React.createElement(React.Fragment)
   const nodeTree = convert(baseNode)
   return nodeTree
 }
@@ -88,7 +89,7 @@ function convert(node) {
 
   props.style = getStylesFromNode(node)
 
-  if (node.__handlers) {
+  if (Object.keys(node.__handlers).length) {
     props.onPress = ev => {
       ev.type = 'Press'
       node.__handlers.press[0].bind(node)(ev)
