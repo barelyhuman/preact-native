@@ -1,0 +1,52 @@
+{
+  "name": "@barelyhuman/preact-native",
+  "version": "0.1.0",
+  "description": "",
+  "license": "MIT",
+  "author": "",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "browser": "./dist/index.module.js",
+      "umd": "./dist/index.umd.js",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "dist/index.js",
+  "umd:main": "dist/index.umd.js",
+  "unpkg": "dist/index.min.js",
+  "module": "dist/index.module.js",
+  "source": "src/index.js",
+  "types": "src/index.d.ts",
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "microbundle build --raw --no-generateTypes -f cjs,esm,umd",
+    "fix": "npx prettier --write .",
+    "next": "bumpp --tag --commit"
+  },
+  "prettier": "@barelyhuman/prettier-config",
+  "dependencies": {
+    "mitt": "^3.0.0",
+    "undom": "^0.4.0"
+  },
+  "devDependencies": {
+    "@barelyhuman/prettier-config": "^1.1.0",
+    "bumpp": "^8.2.1",
+    "microbundle": "^0.15.1",
+    "preact": "^10.11.0",
+    "prettier": "^2.7.1",
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "preact": ">10",
+    "react": ">17"
+  }
+}
