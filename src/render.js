@@ -6,6 +6,7 @@ import { COMPONENT_MAP } from './component-map'
 
 const VNODE_REF = '__vnode_ref__'
 const commitEmitter = mitt()
+const debouncedEmitter = createDebouncedEmitter(commitEmitter)
 
 export function preactRenderer(node) {
   global.document = createDOM()
@@ -23,14 +24,24 @@ function createDOM() {
   return document
 }
 
+function createDebouncedEmitter(emitter) {
+  let tid
+  return (msg, payload) => {
+    if (tid) {
+      clearTimeout(tid)
+    }
+    tid = setTimeout(() => {
+      emitter.emit(msg, payload)
+    }, 0)
+  }
+}
+
 function injectPreactHooks() {
   let oldAfterDiff = options.diffed
 
   options.diffed = vnode => {
     oldAfterDiff && oldAfterDiff(vnode)
-    if (!vnode.parentNode) {
-      commitEmitter.emit('redraw')
-    }
+    debouncedEmitter('redraw')
   }
 }
 
@@ -89,18 +100,38 @@ function convert(node) {
 
   props.style = getStylesFromNode(node)
 
-  if (Object.keys(node.__handlers).length) {
-    props.onPress = ev => {
-      ev.type = 'Press'
-      node.__handlers.press[0].bind(node)(ev)
-    }
-  }
+  const handlers = getEventHandlersFromNode(node)
+  Object.assign(props, handlers)
 
   return React.createElement(
     vnode,
     props,
     ...(node.childNodes || []).map(x => convert(x))
   )
+}
+
+function getEventHandlersFromNode(node) {
+  const handlers = {}
+
+  const KEY_MAP = {
+    press: {
+      type: 'Press',
+      method: 'onPress',
+    },
+    change: {
+      type: 'Change',
+      method: 'onChange',
+    },
+  }
+
+  Object.keys(node.__handlers).forEach(key => {
+    const actionable = KEY_MAP[key]
+    handlers[actionable.method] = ev => {
+      ev.type = actionable.type
+      node.__handlers[key][0].bind(node)(ev)
+    }
+  })
+  return handlers
 }
 
 function getStylesFromNode(node) {
