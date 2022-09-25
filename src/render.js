@@ -37,10 +37,12 @@ function createDebouncedEmitter(emitter) {
 }
 
 function injectPreactHooks() {
-  let oldAfterDiff = options.diffed
+  // @ts-expect-error unexported type, internal mangled hook
+  let oldCommit = options.__c
 
-  options.diffed = vnode => {
-    oldAfterDiff && oldAfterDiff(vnode)
+  // @ts-expect-error unexported type, internal mangled hook
+  options.__c = (vnode, commitQueue) => {
+    oldCommit && oldCommit(vnode, commitQueue)
     debouncedEmitter('redraw')
   }
 }
