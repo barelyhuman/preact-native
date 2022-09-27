@@ -1,6 +1,6 @@
 import { options, h, render as preactRender } from 'preact'
 import React from 'react'
-import dom from 'undom'
+import dom from './dom'
 import mitt from 'mitt'
 import { COMPONENT_MAP } from './component-map'
 

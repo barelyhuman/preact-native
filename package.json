@@ -34,8 +34,7 @@
   },
   "prettier": "@barelyhuman/prettier-config",
   "dependencies": {
-    "mitt": "^3.0.0",
-    "undom": "^0.4.0"
+    "mitt": "^3.0.0"
   },
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
