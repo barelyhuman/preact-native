@@ -22,16 +22,16 @@ $ npm install @barelyhuman/preact-native preact
 2. Change the index.js to look like so
 
 ```js
-import { Renderer } from "@barelyhuman/preact-native";
-import { AppRegistry } from "react-native";
-import App from "./App";
-import { name as appName } from "./app.json";
+import { Renderer } from '@barelyhuman/preact-native'
+import { AppRegistry } from 'react-native'
+import App from './App'
+import { name as appName } from './app.json'
 
 const Main = () => {
-  return <Renderer rootNode={App} />;
-};
+  return <Renderer rootNode={App} />
+}
 
-AppRegistry.registerComponent(appName, () => Main);
+AppRegistry.registerComponent(appName, () => Main)
 ```
 
 3.Now, the `App.js` file and sub components can be written using preact, heres
@@ -40,34 +40,33 @@ an example.
 ```js
 // App.js
 /** @jsxImportSource preact */
-import { makeComponent } from "@barelyhuman/preact-native/src";
-import { signal } from "@preact/signals"; // => install this if you are using this example
+import { makeComponent } from '@barelyhuman/preact-native/src'
+import { signal } from '@preact/signals' // => install this if you are using this example
 
 import {
   SafeAreaView as RSafeAreaView,
   Text as RText,
   TouchableOpacity as RTouchableOpacity,
-} from "react-native";
+} from 'react-native'
 
-const SafeAreaView = makeComponent(RSafeAreaView, "SafeAreaView");
-const Text = makeComponent(RText, "Text");
-const TouchableOpacity = makeComponent(RTouchableOpacity, "TouchableOpacity");
+const SafeAreaView = makeComponent(RSafeAreaView, 'SafeAreaView')
+const Text = makeComponent(RText, 'Text')
+const TouchableOpacity = makeComponent(RTouchableOpacity, 'TouchableOpacity')
 
-const count = signal(0);
+const count = signal(0)
 
-const r = Math.random();
 export default function Home() {
   return (
     <SafeAreaView>
       <TouchableOpacity
         onPress={() => {
-          count.value += 1;
+          count.value += 1
         }}
       >
-        <Text style={{ color: "dodgerblue", padding: 8 }}>{count.value}</Text>
+        <Text style={{ color: 'dodgerblue', padding: 8 }}>{count.value}</Text>
       </TouchableOpacity>
     </SafeAreaView>
-  );
+  )
 }
 ```
 
