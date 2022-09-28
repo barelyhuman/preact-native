@@ -134,6 +134,7 @@ function createEnvironment() {
       if (!attr) this.attributes.push((attr = { ns, name }))
       attr.value = String(value)
     }
+    
     getAttributeNS(ns, name) {
       let attr = findWhere(
         this.attributes,
