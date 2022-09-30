@@ -33,19 +33,17 @@
     "next": "bumpp --tag --commit"
   },
   "prettier": "@barelyhuman/prettier-config",
-  "dependencies": {
-    "mitt": "^3.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
     "bumpp": "^8.2.1",
     "microbundle": "^0.15.1",
     "preact": "^10.11.0",
     "prettier": "^2.7.1",
-    "react": "^18.2.0"
+    "react-native": "^0.70.1"
   },
   "peerDependencies": {
     "preact": ">10",
-    "react": ">17"
+    "react-native": ">=0.65"
   }
 }
