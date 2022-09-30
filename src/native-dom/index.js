@@ -33,11 +33,24 @@ on React Native.
 import { Text as RText, SafeAreaView as RSafeAreaView } from 'react-native'
 
 import { UIManager } from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
+import DevSettings from 'react-native/Libraries/Utilities/DevSettings'
 
 const BINDINGS = new Map()
 const IS_TRUSTED = Symbol('isTrusted')
 export const BINDING = Symbol.for('binding')
-const NODES = new WeakMap()
+let NODES = new WeakMap()
+
+function noop() {}
+
+const onRefresh = cb => {
+  if (__DEV__) {
+    let oldRefresh = DevSettings.onFastRefresh
+    DevSettings.onFastRefresh = () => {
+      cb && cb()
+      oldRefresh && oldRefresh()
+    }
+  }
+}
 
 let renderStarted = false
 
@@ -331,19 +344,15 @@ function getListenerFlags(options) {
 export function render(node) {
   const process = createProcess()
   process()
-
+  onRefresh(noop)
   let renderTree = _buildRenderTree(node)
-
   return renderTree
 }
 
 function _buildRenderTree(node) {
   let tree
   let currentNode = node
-  while (currentNode?.render) {
-    tree = currentNode.render()
-    currentNode = null
-  }
+  tree = currentNode.render()
   return tree
 }
 
