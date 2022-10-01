@@ -1,3 +1,5 @@
+/* eslint-disable no-bitwise */
+
 /*
 ROUGH Implementation of a mutable DOM Node for Text component react
 
@@ -30,21 +32,63 @@ on React Native.
 * - The above should give enough information about generalised handling of updates
 */
 
-import { Text as RText, SafeAreaView as RSafeAreaView } from 'react-native'
+import {
+  AccessibilityInfo,
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Button,
+  DevSettings,
+  DrawerLayoutAndroid,
+  FlatList,
+  Image,
+  ImageBackground,
+  InputAccessoryView,
+  KeyboardAvoidingView,
+  Modal,
+  Pressable,
+  RefreshControl,
+  SafeAreaView as RSafeAreaView,
+  ScrollView,
+  SectionList,
+  StatusBar,
+  Switch,
+  Text as RText,
+  TextInput,
+  Touchable,
+  TouchableHighlight,
+  TouchableNativeFeedback,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  UIManager,
+  View,
+  VirtualizedList,
+  VirtualizedSectionList,
+} from 'react-native'
 
-import { UIManager } from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
-import DevSettings from 'react-native/Libraries/Utilities/DevSettings'
-
-const BINDINGS = new Map()
-const IS_TRUSTED = Symbol('isTrusted')
-export const BINDING = Symbol.for('binding')
+let BINDINGS = new Map()
 let NODES = new WeakMap()
+
+const EVENTPHASE_NONE = 0
+const EVENTPHASE_BUBBLE = 1
+const EVENTPHASE_CAPTURE = 2
+const EVENTPHASE_AT_TARGET = 3
+const EVENTPHASE_PASSIVE = 4
+const EVENTOPT_ONCE = 8
+
+const BINDING = Symbol.for('binding')
+const LISTENERS = Symbol.for('listeners')
+const STYLE = Symbol.for('style')
+const IS_TRUSTED = Symbol.for('IS_TRUSTED')
+const CURRENT_STYLE = Symbol.for('currentStyle')
+const OWNER_NODE = Symbol.for('ownerNode')
 
 function noop() {}
 
 const onRefresh = cb => {
   if (__DEV__) {
     let oldRefresh = DevSettings.onFastRefresh
+
     DevSettings.onFastRefresh = () => {
       cb && cb()
       oldRefresh && oldRefresh()
@@ -65,6 +109,77 @@ const TYPES = {
   '#document': { type: 'Document' },
   'Text': { type: 'NATIVE_Text', hostComponent: RText },
   'SafeAreaView': { type: 'NATIVE_SafeAreaView', hostComponent: RSafeAreaView },
+  'AccessibilityInfo': {
+    type: 'NATIVE_AccessibilityInfo',
+    hostComponent: AccessibilityInfo,
+  },
+  'ActivityIndicator': {
+    type: 'NATIVE_ActivityIndicator',
+    hostComponent: ActivityIndicator,
+  },
+  'Button': { type: 'NATIVE_Button', hostComponent: Button },
+  'DrawerLayoutAndroid': {
+    type: 'NATIVE_DrawerLayoutAndroid',
+    hostComponent: DrawerLayoutAndroid,
+  },
+  'FlatList': { type: 'NATIVE_FlatList', hostComponent: FlatList },
+  'Image': { type: 'NATIVE_Image', hostComponent: Image },
+  'ImageBackground': {
+    type: 'NATIVE_ImageBackground',
+    hostComponent: ImageBackground,
+  },
+  'InputAccessoryView': {
+    type: 'NATIVE_InputAccessoryView',
+    hostComponent: InputAccessoryView,
+  },
+  'KeyboardAvoidingView': {
+    type: 'NATIVE_KeyboardAvoidingView',
+    hostComponent: KeyboardAvoidingView,
+  },
+
+  'Modal': { type: 'NATIVE_Modal', hostComponent: Modal },
+  'Pressable': { type: 'NATIVE_Pressable', hostComponent: Pressable },
+
+  'RefreshControl': {
+    type: 'NATIVE_RefreshControl',
+    hostComponent: RefreshControl,
+  },
+  'ScrollView': { type: 'NATIVE_ScrollView', hostComponent: ScrollView },
+  'SectionList': { type: 'NATIVE_SectionList', hostComponent: SectionList },
+  'StatusBar': { type: 'NATIVE_StatusBar', hostComponent: StatusBar },
+  'Switch': { type: 'NATIVE_Switch', hostComponent: Switch },
+  'TextInput': { type: 'NATIVE_TextInput', hostComponent: TextInput },
+  'Touchable': { type: 'NATIVE_Touchable', hostComponent: Touchable },
+  'TouchableHighlight': {
+    type: 'NATIVE_TouchableHighlight',
+    hostComponent: TouchableHighlight,
+  },
+  'TouchableNativeFeedback': {
+    type: 'NATIVE_TouchableNativeFeedback',
+    hostComponent: TouchableNativeFeedback,
+  },
+  'TouchableOpacity': {
+    type: 'NATIVE_TouchableOpacity',
+    hostComponent: TouchableOpacity,
+  },
+  'TouchableWithoutFeedback': {
+    type: 'NATIVE_TouchableWithoutFeedback',
+    hostComponent: TouchableWithoutFeedback,
+  },
+  'View': { type: 'NATIVE_View', hostComponent: View },
+  'VirtualizedList': {
+    type: 'NATIVE_VirtualizedList',
+    hostComponent: VirtualizedList,
+  },
+  'VirtualizedSectionList': {
+    type: 'NATIVE_VirtualizedSectionList',
+    hostComponent: VirtualizedSectionList,
+  },
+  'ActionSheetIOS': {
+    type: 'NATIVE_ActionSheetIOS',
+    hostComponent: ActionSheetIOS,
+  },
+  'Alert': { type: 'NATIVE_Alert', hostComponent: Alert },
 }
 
 function createBinding(node) {
@@ -100,8 +215,16 @@ function createBinding(node) {
         bridge.enqueue('setProp', [id, prop, value, node.ref])
       }
     },
+    removeProp(prop) {
+      props.delete(prop)
+      const current = props.get(prop)
+      bridge.enqueue('setProp', [id, prop, current, node.ref])
+    },
     getProp(prop) {
       return props.get(prop)
+    },
+    getAllProps() {
+      return [...props.entries()]
     },
     dispatchEvent(eventInfo) {
       const [type, bubbles, cancelable, timestamp, extra] = eventInfo
@@ -133,6 +256,7 @@ const bridge = {
         if (binding.config.type === 'Text') {
           _updateTextNode(node, binding)
         }
+        _updateNodeProps(node, binding)
         break
       }
     }
@@ -163,12 +287,14 @@ function createProcess() {
     }
     setTimeout(() => {
       process()
-    }, 250)
+    }, 0)
   }
 }
 
 class Node {
   children = []
+  parent = null
+
   constructor(localName) {
     this.localName = localName
     const binding = createBinding(this)
@@ -185,6 +311,14 @@ class Node {
     this.nativeRef = val
   }
 
+  get parentNode() {
+    return this.parent
+  }
+
+  get childNodes() {
+    return this.children
+  }
+
   appendChild(node) {
     node.parent = this
     this.children.push(node)
@@ -198,7 +332,110 @@ class Node {
 class Element extends Node {
   constructor(type) {
     super(type)
+    this.attributes = []
+    this[LISTENERS] = new Map()
+    this[STYLE] = createStyleBinding(this[BINDING].id)
     return new Proxy(this, ELEMENT_PROXY)
+  }
+
+  get nodeType() {
+    return 1
+  }
+
+  get className() {
+    return this.getAttribute('class')
+  }
+
+  set className(val) {
+    this.setAttribute('class', val)
+  }
+
+  get style() {
+    return this[STYLE]
+  }
+
+  set style(val) {
+    const finalStyle = {}
+    Object.keys(val).forEach(key => {
+      finalStyle[key] = val[key]
+      this[STYLE][CURRENT_STYLE].set(key, val[key])
+    })
+    this[STYLE] = finalStyle
+  }
+
+  setAttribute(key, value) {
+    this[BINDING].setProp(key, value)
+  }
+
+  getAttribute(key) {
+    return this[BINDING].getProp(key)
+  }
+
+  removeAttribute(key) {
+    this[BINDING].removeProp(key)
+  }
+
+  addEventListener(type, listener, options) {
+    const all = this[LISTENERS]
+    let list = all.get(type)
+    if (!list) {
+      all.set(type, (list = []))
+    }
+
+    list.push({
+      _listener: listener,
+      _flags: getListenerFlags(options),
+    })
+
+    const eventFunc = e => {
+      list.forEach(fn => {
+        fn._listener(e)
+      })
+    }
+
+    this[BINDING].setProp(type, eventFunc)
+  }
+
+  removeEventListener(type, listener, options) {
+    const list = this[LISTENERS].get(type)
+    if (!list) {
+      return false
+    }
+    const flags = getListenerFlags(options)
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i]
+      if (item._listener === listener && item._flags === flags) {
+        list.splice(i, 1)
+        return true
+      }
+    }
+    return false
+  }
+
+  dispatchEvent(event) {
+    let target = (event.target = this)
+    const path = (event.path = [this])
+    while ((target = target.parentNode)) {
+      path.push(target)
+    }
+    let defaultPrevented = false
+    for (let i = path.length; i--; ) {
+      if (
+        fireEvent(
+          event,
+          path[i],
+          i === 0 ? EVENTPHASE_AT_TARGET : EVENTPHASE_CAPTURE
+        )
+      ) {
+        defaultPrevented = true
+      }
+    }
+    for (let i = 1; i < path.length; i++) {
+      if (fireEvent(event, path[i], EVENTPHASE_BUBBLE)) {
+        defaultPrevented = true
+      }
+    }
+    return !defaultPrevented
   }
 
   render() {
@@ -213,9 +450,20 @@ class Element extends Node {
         this.ref = x
         this[BINDING].create(x)
       },
-      props: {
-        children: this.children.map(x => x.render()),
-      },
+    }
+
+    reactComponent.props = {}
+
+    if (this.children.length) {
+      reactComponent.props.children = this.children.map(x => x.render())
+    }
+
+    const allProps = this[BINDING].getAllProps()
+
+    if (allProps.length) {
+      allProps.forEach(([k, v]) => {
+        reactComponent.props[k] = v
+      })
     }
 
     reactComponent.$$typeof = REACT_ELEMENT_TYPE
@@ -227,6 +475,10 @@ class Text extends Element {
   constructor(value) {
     super('#text')
     this._value = value
+  }
+
+  get nodeType() {
+    return 3
   }
 
   set data(data) {
@@ -302,9 +554,6 @@ class Event {
     this.immediatePropagationStopped = false
     this.data = undefined
   }
-  get isTrusted() {
-    return this[EVENT_TRUSTED]
-  }
   stopPropagation() {
     this.cancelBubble = true
   }
@@ -321,11 +570,7 @@ class Event {
     return this.defaultPrevented
   }
 }
-const EVENTPHASE_NONE = 0
-const EVENTPHASE_BUBBLE = 1
-const EVENTPHASE_CAPTURE = 2
-const EVENTPHASE_PASSIVE = 4
-const EVENTOPT_ONCE = 8
+
 // Flags are easier to compare for listener lookups
 function getListenerFlags(options) {
   if (typeof options === 'object' && options) {
@@ -339,6 +584,66 @@ function getListenerFlags(options) {
     return flags
   }
   return options ? EVENTPHASE_CAPTURE : EVENTPHASE_BUBBLE
+}
+
+function fireEvent(event, target, phase) {
+  const list = target[LISTENERS].get(event.type)
+  if (!list) {
+    return
+  }
+  // let error;
+  let defaultPrevented = false
+  // use forEach for freezing
+  const frozen = list.slice()
+  for (let i = 0; i < frozen.length; i++) {
+    const item = frozen[i]
+    const fn = item._listener
+    event.eventPhase = phase
+    // the bridge is async, so events are always passive.
+    //event.inPassiveListener = passive;
+    event.currentTarget = target
+    try {
+      let ret = fn.call(target, event)
+      if (ret === false) {
+        event.defaultPrevented = true
+      }
+    } catch (e) {
+      //error = e;
+      setTimeout(thrower, 0, e)
+    }
+    if (item._flags && EVENTOPT_ONCE !== 0) {
+      list.splice(list.indexOf(item), 1)
+    }
+    if (event.defaultPrevented === true) {
+      defaultPrevented = true
+    }
+    if (event.immediatePropagationStopped) {
+      break
+    }
+  }
+  // if (error !== undefined) throw error;
+  return defaultPrevented
+}
+
+function thrower(error) {
+  throw error
+}
+
+// this could be Style.prototype and use the instance as currentStyle
+const STYLE_PROXY = {
+  has() {
+    return true
+  },
+  get(style, key) {
+    return style[CURRENT_STYLE].get(key)
+  },
+  set(style, key, value) {
+    const current = style[CURRENT_STYLE]
+    current.set(key, value)
+    const _style = Object.fromEntries(current.entries())
+    style[OWNER_NODE][BINDING].setProp('style', _style)
+    return style
+  },
 }
 
 export function render(node) {
@@ -378,4 +683,26 @@ function _updateTextNode(node, binding) {
   UIManager.updateView(textNodeTag, 'RCTRawText', {
     text: binding.getProp('data'),
   })
+}
+
+function createStyleBinding(id) {
+  let style = {}
+  const binding = BINDINGS.get(id)
+  Object.defineProperty(style, CURRENT_STYLE, { value: new Map() })
+  Object.defineProperty(style, OWNER_NODE, {
+    get: NODES.get.bind(NODES, binding),
+  })
+  return new Proxy(style, STYLE_PROXY)
+}
+
+function _updateNodeProps(node, binding) {
+  if (!node.ref) {
+    // TODO: throw an non render error
+    return
+  }
+  const props = binding.getAllProps()
+  const _props = Object.fromEntries(props)
+  // Will be deprecated soon, have to switch to
+  // writing our own
+  node.ref.setNativeProps(_props)
 }

@@ -8,6 +8,7 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
+    "downlevelIteration": true,
     "moduleResolution": "node",
     "target": "es5",
     "outDir": "dist"
