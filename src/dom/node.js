@@ -1,5 +1,4 @@
-import { createBinding } from './bridge'
-import { BINDING, NODES } from './shared'
+import { BINDING, createBinding, NODES } from 'dom-native'
 
 export class Node {
   parent = null

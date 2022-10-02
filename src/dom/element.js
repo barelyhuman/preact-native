@@ -1,5 +1,4 @@
-import { Node } from './node'
-import { BINDING, BINDINGS, meta, NODES, TYPES } from './shared'
+import { BINDING, BINDINGS, meta, Node, NODES, TYPES } from 'dom-native'
 
 const LISTENERS = Symbol.for('listeners')
 const STYLE = Symbol.for('style')

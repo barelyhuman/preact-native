@@ -1,6 +1,5 @@
+import { BINDINGS, Event, IS_TRUSTED, meta, NODES, TYPES } from 'dom-native'
 import { UIManager } from 'react-native'
-import { Event } from './element'
-import { BINDINGS, IS_TRUSTED, meta, NODES, TYPES } from './shared'
 
 const bridge = {
   queue: [],

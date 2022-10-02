@@ -11,7 +11,10 @@
     "downlevelIteration": true,
     "moduleResolution": "node",
     "target": "es5",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "dom-native":["src/dom"],
+    }
   },
   "include": ["src"],
   "exclude": [

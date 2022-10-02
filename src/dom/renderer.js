@@ -1,5 +1,4 @@
-import { createProcess } from './bridge'
-import { noop, onRefresh } from './utils'
+import { createProcess, noop, onRefresh } from 'dom-native'
 
 export function render(node) {
   const process = createProcess()
