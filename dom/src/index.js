@@ -1,16 +1,314 @@
-import { BINDING, BINDINGS, meta, Node, NODES, TYPES } from 'dom-native'
+import {
+  UIManager,
+  AccessibilityInfo,
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Button,
+  DrawerLayoutAndroid,
+  FlatList,
+  Image,
+  ImageBackground,
+  InputAccessoryView,
+  KeyboardAvoidingView,
+  Modal,
+  Pressable,
+  RefreshControl,
+  SafeAreaView as RSafeAreaView,
+  ScrollView,
+  SectionList,
+  StatusBar,
+  Switch,
+  Text as RText,
+  TextInput,
+  Touchable,
+  TouchableHighlight,
+  TouchableNativeFeedback,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+  VirtualizedList,
+  VirtualizedSectionList,
+} from 'react-native'
+import { noop, onRefresh } from './utils'
+
+const meta = {
+  renderStarted: false,
+}
+
+let BINDINGS = new Map()
+let NODES = new WeakMap()
+
+const IS_TRUSTED = Symbol.for('is_trusted')
+const BINDING = Symbol.for('binding')
+
+const TYPES = {
+  '#text': { type: 'Text' },
+  '#document': { type: 'Document', hostComponent: View },
+  'Text': { type: 'NATIVE_Text', hostComponent: RText },
+  'SafeAreaView': { type: 'NATIVE_SafeAreaView', hostComponent: RSafeAreaView },
+  'AccessibilityInfo': {
+    type: 'NATIVE_AccessibilityInfo',
+    hostComponent: AccessibilityInfo,
+  },
+  'ActivityIndicator': {
+    type: 'NATIVE_ActivityIndicator',
+    hostComponent: ActivityIndicator,
+  },
+  'Button': { type: 'NATIVE_Button', hostComponent: Button },
+  'DrawerLayoutAndroid': {
+    type: 'NATIVE_DrawerLayoutAndroid',
+    hostComponent: DrawerLayoutAndroid,
+  },
+  'FlatList': { type: 'NATIVE_FlatList', hostComponent: FlatList },
+  'Image': { type: 'NATIVE_Image', hostComponent: Image },
+  'ImageBackground': {
+    type: 'NATIVE_ImageBackground',
+    hostComponent: ImageBackground,
+  },
+  'InputAccessoryView': {
+    type: 'NATIVE_InputAccessoryView',
+    hostComponent: InputAccessoryView,
+  },
+  'KeyboardAvoidingView': {
+    type: 'NATIVE_KeyboardAvoidingView',
+    hostComponent: KeyboardAvoidingView,
+  },
+
+  'Modal': { type: 'NATIVE_Modal', hostComponent: Modal },
+  'Pressable': { type: 'NATIVE_Pressable', hostComponent: Pressable },
+
+  'RefreshControl': {
+    type: 'NATIVE_RefreshControl',
+    hostComponent: RefreshControl,
+  },
+  'ScrollView': { type: 'NATIVE_ScrollView', hostComponent: ScrollView },
+  'SectionList': { type: 'NATIVE_SectionList', hostComponent: SectionList },
+  'StatusBar': { type: 'NATIVE_StatusBar', hostComponent: StatusBar },
+  'Switch': { type: 'NATIVE_Switch', hostComponent: Switch },
+  'TextInput': { type: 'NATIVE_TextInput', hostComponent: TextInput },
+  'Touchable': { type: 'NATIVE_Touchable', hostComponent: Touchable },
+  'TouchableHighlight': {
+    type: 'NATIVE_TouchableHighlight',
+    hostComponent: TouchableHighlight,
+  },
+  'TouchableNativeFeedback': {
+    type: 'NATIVE_TouchableNativeFeedback',
+    hostComponent: TouchableNativeFeedback,
+  },
+  'TouchableOpacity': {
+    type: 'NATIVE_TouchableOpacity',
+    hostComponent: TouchableOpacity,
+  },
+  'TouchableWithoutFeedback': {
+    type: 'NATIVE_TouchableWithoutFeedback',
+    hostComponent: TouchableWithoutFeedback,
+  },
+  'View': { type: 'NATIVE_View', hostComponent: View },
+  'VirtualizedList': {
+    type: 'NATIVE_VirtualizedList',
+    hostComponent: VirtualizedList,
+  },
+  'VirtualizedSectionList': {
+    type: 'NATIVE_VirtualizedSectionList',
+    hostComponent: VirtualizedSectionList,
+  },
+  'ActionSheetIOS': {
+    type: 'NATIVE_ActionSheetIOS',
+    hostComponent: ActionSheetIOS,
+  },
+  'Alert': { type: 'NATIVE_Alert', hostComponent: Alert },
+}
+
+const bridge = {
+  queue: [],
+  currentId: 0,
+  call(method, params) {
+    const id = params[0]
+    const binding = BINDINGS.get(id)
+    const node = NODES.get(binding)
+
+    switch (method) {
+      case 'create': {
+        break
+      }
+      case 'setProp': {
+        if (binding.config.type === 'Text') {
+          _updateTextNode(node, binding)
+        }
+        _updateNodeProps(node, binding)
+        break
+      }
+    }
+  },
+  enqueue(method, params) {
+    this.queue.push({
+      method,
+      params,
+    })
+  },
+  handleEvent(method, params) {
+    switch (method) {
+      case 'event':
+        const target = BINDINGS.get(params.id)
+        if (target) {
+          target.dispatchEvent(params.event)
+        }
+        break
+    }
+  },
+}
+
+// TODO: Convert the queue to a passive one
+// Something that could listen to additions
+// and then start itself and not keep looping
+// if nothing is there
+function createProcess() {
+  return function process() {
+    if (meta.renderStarted && bridge.queue.length > 0) {
+      const toProcess = bridge.queue.shift()
+      bridge.call(toProcess.method, toProcess.params)
+    }
+    setTimeout(() => {
+      process()
+    }, 0)
+  }
+}
+
+function createBinding(node) {
+  const config = TYPES[node.localName]
+  const id = ++bridge.currentId
+  const props = new Map()
+
+  const binding = {
+    id,
+    props,
+    config: config,
+    nativeInstance: node.ref,
+    create() {
+      bridge.enqueue('create', [id, config, props])
+      for (const [key, value] of Object.entries(props)) {
+        if (value !== undefined) {
+          bridge.enqueue('setProp', [id, key, value])
+        }
+      }
+    },
+    destroy() {
+      bridge.enqueue('destroy', [id])
+    },
+    append(parent) {
+      bridge.enqueue('append', [id, parent])
+    },
+    insertBefore(sibling) {
+      bridge.enqueue('insertBefore', [id, sibling])
+    },
+    setProp(prop, value) {
+      if (props.get(prop) !== value) {
+        props.set(prop, value)
+        bridge.enqueue('setProp', [id, prop, value])
+      }
+    },
+    removeProp(prop) {
+      props.delete(prop)
+    },
+    getProp(prop) {
+      return props.get(prop)
+    },
+    getAllProps() {
+      return [...props.entries()]
+    },
+    dispatchEvent(eventInfo) {
+      const [type, bubbles, cancelable, timestamp, extra] = eventInfo
+      const event = new Event(type, bubbles, cancelable, timestamp)
+      if (extra !== undefined) {
+        Object.assign(event, extra)
+      }
+      event[IS_TRUSTED] = true
+      node.dispatchEvent(event)
+    },
+  }
+  BINDINGS.set(id, binding)
+  return binding
+}
+
+function _updateTextNode(node, binding) {
+  const parent = node.parent
+
+  if (!parent.ref) {
+    return
+  }
+
+  if (!parent.ref._children.length) {
+    // TODO: throw
+    return
+  }
+
+  if (typeof parent.ref._children[0] !== 'number') {
+    // TODO: throw
+    return
+  }
+
+  const textNodeTag = parent.ref._children[0]
+
+  UIManager.updateView(textNodeTag, 'RCTRawText', {
+    text: binding.getProp('data'),
+  })
+}
+
+function _updateNodeProps(node, binding) {
+  if (!node.ref) {
+    // TODO: throw an non render error
+    return
+  }
+  const props = binding.getAllProps()
+  const _props = Object.fromEntries(props)
+  // Will be deprecated soon, have to switch to
+  // writing our own
+  node.ref.setNativeProps(_props)
+}
 
 const LISTENERS = Symbol.for('listeners')
 const STYLE = Symbol.for('style')
-const IS_TRUSTED = Symbol.for('IS_TRUSTED')
 const CURRENT_STYLE = Symbol.for('currentStyle')
 const OWNER_NODE = Symbol.for('ownerNode')
 
-export const REACT_ELEMENT_TYPE =
+const REACT_ELEMENT_TYPE =
   (typeof Symbol !== 'undefined' &&
     Symbol.for &&
     Symbol.for('react.element')) ||
   0xeac7
+
+class Node {
+  parent = null
+  children = []
+  constructor(localName) {
+    this.localName = localName
+    const binding = createBinding(this)
+    this[BINDING] = binding
+    NODES.set(binding, this)
+  }
+
+  get ref() {
+    return this.nativeRef
+  }
+
+  set ref(val) {
+    this.nativeRef = val
+  }
+
+  get parentNode() {
+    return this.parent
+  }
+
+  appendChild(node) {
+    node.parent = this
+    this.children.push(node)
+  }
+
+  removeChild(node) {
+    this.children = this.children.filter(x => x.id === node.id)
+  }
+}
 
 class Element extends Node {
   constructor(type) {
@@ -68,7 +366,7 @@ class Element extends Node {
   }
 
   get id() {
-    this.getAttribute('id')
+    return this.getAttribute('id')
   }
 
   get value() {
@@ -294,7 +592,7 @@ function createDescriptor(key) {
 // is involved and is adding events to the DOM
 // should be able to proxy them to the original
 // bridge
-export class Event {
+class Event {
   constructor(type, bubbles, cancelable, timeStamp) {
     Object.defineProperty(this, IS_TRUSTED, { value: false })
     this.type = type
@@ -414,4 +712,23 @@ function createStyleBinding(id) {
     get: NODES.get.bind(NODES, binding),
   })
   return new Proxy(style, STYLE_PROXY)
+}
+
+export function render(node) {
+  const process = createProcess()
+  process()
+
+  // Only executes during development or to be specific
+  //   when the __DEV__ flag is enabled
+  onRefresh(noop)
+
+  let renderTree = _buildRenderTree(node)
+  return renderTree
+}
+
+function _buildRenderTree(node) {
+  let tree
+  let currentNode = node
+  tree = currentNode.render()
+  return tree
 }

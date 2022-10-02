@@ -8,15 +8,14 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "downlevelIteration": true,
     "moduleResolution": "node",
-    "target": "es5",
+    "target": "ES2015",
     "outDir": "dist",
     "paths": {
-      "dom-native":["src/dom"],
+      "@barelyhuman/preact-native": ["."],
+      "@barelyhuman/preact-native/*": ["./*"]
     }
   },
-  "include": ["src"],
   "exclude": [
     "node_modules",
     "dist",
