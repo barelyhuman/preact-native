@@ -68,10 +68,10 @@ export function createBinding(node) {
     config: config,
     nativeInstance: node.ref,
     create() {
-      bridge.enqueue('create', [id, config, props, node.ref])
+      bridge.enqueue('create', [id, config, props])
       for (const [key, value] of Object.entries(props)) {
         if (value !== undefined) {
-          bridge.enqueue('setProp', [id, key, value, node.ref])
+          bridge.enqueue('setProp', [id, key, value])
         }
       }
     },
@@ -87,7 +87,7 @@ export function createBinding(node) {
     setProp(prop, value) {
       if (props.get(prop) !== value) {
         props.set(prop, value)
-        bridge.enqueue('setProp', [id, prop, value, node.ref])
+        bridge.enqueue('setProp', [id, prop, value])
       }
     },
     removeProp(prop) {

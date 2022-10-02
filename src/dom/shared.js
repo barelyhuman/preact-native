@@ -42,7 +42,7 @@ export const BINDING = Symbol.for('binding')
 
 export const TYPES = {
   '#text': { type: 'Text' },
-  '#document': { type: 'Document' },
+  '#document': { type: 'Document', hostComponent: View },
   'Text': { type: 'NATIVE_Text', hostComponent: RText },
   'SafeAreaView': { type: 'NATIVE_SafeAreaView', hostComponent: RSafeAreaView },
   'AccessibilityInfo': {

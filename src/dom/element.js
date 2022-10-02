@@ -34,6 +34,23 @@ class Element extends Node {
     this.setAttribute('class', val)
   }
 
+  set textContent(val) {
+    if (this.localName !== 'Text') {
+      throw new Error('Text can only be inside a Text Element')
+    }
+    let textNode = this.children.find(x => x.nodeType === 3)
+    if (!textNode) {
+      textNode = new Text(val)
+      this.appendChild(textNode)
+    }
+
+    textNode.data = val
+  }
+
+  get textContent() {
+    return this.children.find(x => x.nodeType === 3).data
+  }
+
   get style() {
     return this[STYLE]
   }
@@ -47,12 +64,65 @@ class Element extends Node {
     this[STYLE] = finalStyle
   }
 
+  set id(val) {
+    this.setAttribute('id', val)
+  }
+
+  get id() {
+    this.getAttribute('id')
+  }
+
+  get value() {
+    // HACK: figure out a better way to get the text
+    // or maybe instruct users to avoid doing this?
+    // but then what about the frameworks...
+    if (__DEV__) {
+      return this.ref._internalFiberInstanceHandleDEV.memoizedProps.text
+    } else if (this.ref?._internalFiberInstanceHandle) {
+      return this.ref._internalFiberInstanceHandle.memoizedProps.text
+    }
+    return this.getAttribute('value')
+  }
+
+  set value(val) {
+    this.setAttribute('value', val)
+  }
+
+  getElementById(id) {
+    let result
+
+    // root check
+    if (this[BINDING].getProp('id') === id) {
+      return this
+    }
+
+    // check 1st level children
+    for (let i = 0; i < this.children.length; i += 1) {
+      const x = this.children[i]
+      if (x[BINDING].getProp('id') === id) {
+        result = x
+      }
+    }
+
+    // branched check
+    if (!result) {
+      for (let i = 0; i < this.children.length; i += 1) {
+        result = this.children[i].getElementById(id)
+        if (result) {
+          break
+        }
+      }
+    }
+
+    return result
+  }
+
   setAttribute(key, value) {
-    this[BINDING].setProp(key, value)
+    this[BINDING]?.setProp(key, value)
   }
 
   getAttribute(key) {
-    return this[BINDING].getProp(key)
+    return this[BINDING]?.getProp(key)
   }
 
   removeAttribute(key) {
@@ -158,7 +228,7 @@ class Element extends Node {
 class Text extends Element {
   constructor(value) {
     super('#text')
-    this._value = value
+    this.data = value
   }
 
   get nodeType() {
@@ -174,12 +244,8 @@ class Text extends Element {
     return this[BINDING].getProp('data')
   }
 
-  get value() {
-    return this._value
-  }
-
   render() {
-    return this._value
+    return this.data
   }
 }
 
