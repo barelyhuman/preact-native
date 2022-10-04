@@ -41,9 +41,9 @@
     "build": "npm-run-all --parallel build:*",
     "build:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom",
     "dev:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom --watch",
-    "example:start":"cd example;yarn start",
-    "example:ios":"cd example; yarn ios",
-    "example:android":"cd example; yarn android",
+    "example:start": "cd example;yarn start",
+    "example:ios": "cd example; yarn ios",
+    "example:android": "cd example; yarn android",
     "fix": "npx prettier --write .",
     "next": "bumpp --tag --commit"
   },

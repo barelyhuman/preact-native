@@ -1,14 +1,11 @@
-import {Text,SafeAreaView,View,TouchableOpacity} from 'react-native';
-import {Document,render,registerHostElement} from '@barelyhuman/preact-native/dom';
-
+import { Document, registerHostElement, render } from '@barelyhuman/preact-native/dom';
+import { SafeAreaView, Text, TouchableOpacity } from 'react-native';
 
 
 const document = new Document();
 
-registerHostElement('input',Text);
 registerHostElement('p',Text);
 registerHostElement('safeareaview',SafeAreaView);
-registerHostElement('div',View);
 registerHostElement('button',TouchableOpacity);
 
 function App(){

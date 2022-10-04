@@ -19,56 +19,62 @@ $ npm install @barelyhuman/preact-native preact
 ## Usage
 
 1. Setup a base react native project using `npx react-native init`
-2. Change the index.js to look like so
+2. Change the App.js to this
 
 ```js
-import { Renderer } from '@barelyhuman/preact-native'
-import { AppRegistry } from 'react-native'
-import App from './App'
-import { name as appName } from './app.json'
+// import the host components from react native
+import { Text } from 'react-native'
 
-const Main = () => {
-  return <Renderer rootNode={App} />
-}
-
-AppRegistry.registerComponent(appName, () => Main)
-```
-
-3.Now, the `App.js` file and sub components can be written using preact, heres
-an example.
-
-```js
-// App.js
-/** @jsxImportSource preact */
-import { makeComponent } from '@barelyhuman/preact-native/src'
-import { signal } from '@preact/signals' // => install this if you are using this example
-
+// import the dom creation helpers from
+// preact-native dom
 import {
-  SafeAreaView as RSafeAreaView,
-  Text as RText,
-  TouchableOpacity as RTouchableOpacity,
-} from 'react-native'
+  Document,
+  render,
+  registerHostElement,
+} from '@barelyhuman/preact-native/dom'
 
-const SafeAreaView = makeComponent(RSafeAreaView, 'SafeAreaView')
-const Text = makeComponent(RText, 'Text')
-const TouchableOpacity = makeComponent(RTouchableOpacity, 'TouchableOpacity')
+// create a DOM reference
+global.document = new Document()
 
-const count = signal(0)
+// register the host element to the dom
+registerHostElement('Text', Text)
 
-export default function Home() {
-  return (
-    <SafeAreaView>
-      <TouchableOpacity
-        onPress={() => {
-          count.value += 1
-        }}
-      >
-        <Text style={{ color: 'dodgerblue', padding: 8 }}>{count.value}</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
-  )
+function App() {
+  let count = 0
+
+  // create an element from the one's you registered above
+  const text = document.createElement('Text')
+
+  // set it's text content
+  text.textContent = count
+
+  setInterval(() => {
+    text.textContent = ++count
+  }, 1000)
+
+  // create a react compatible tree
+  return render(text)
 }
 ```
+
+> **Note**: All react related stuff (react as a dep and render tree needing
+> react) will be removed from the library once I can handle creation of all
+> these native modules manually without having to re-write the entire react
+> native base from scratch
+
+## Roadmap
+
+- [x] A minimal dom
+- [ ] Create views from the bridge instead of rendering with react
+- [x] Update view styles from the bridge
+- [x] Update text nodes from the bridge
+- [ ] Add compat for preact to make it possible for preact to diff and render
+      without the need for a react tree generator
+      `import {render} from "preact-native/dom"`
+
+## Contribute
+
+read the [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Why ?
 
