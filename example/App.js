@@ -1,47 +1,24 @@
-import { Document, registerHostElement, render } from '@barelyhuman/preact-native/dom';
-import { SafeAreaView, Text, TouchableOpacity } from 'react-native';
+import { createDOM, registerNativeDOM } from '@barelyhuman/preact-native/dom'
 
+let document
 
-const document = new Document();
-
-registerHostElement('p',Text);
-registerHostElement('safeareaview',SafeAreaView);
-registerHostElement('button',TouchableOpacity);
-
-function App(){
-  let count = 0;
-
-  const touchable = document.createElement('button');
-  touchable.setAttribute('activeOpacity',1);
-
-  const text = document.createElement('p');
-  text.textContent = count;
-  touchable.appendChild(text);
-
-  Object.assign(touchable.style,{
-    height: '100%',
-    width: '100%',
-    alignItems:'center',
-    justifyContent:'center',
-    backgroundColor:'#181A1F',
-    borderRadius: 6,
-  });
-
-  Object.assign(text.style,{
-    fontSize:52,
-    color:'#C6CCD7',
-    fontWeight:'bold',
-  });
-
-
-  touchable.addEventListener('press',(e)=>{
-    text.textContent = ++count;
-    Object.assign(text.style,{
-      color:count % 2 === 0 ? '#98C379' : '#E06C75',
-    });
-  });
-  return render(touchable);
+function App({ rootTag }) {
+  registerNativeDOM()
+  document = createDOM(rootTag)
+  global.document = document
+  onRender()
+  return null
 }
 
-export default App;
+function onRender() {
+  const saView = document.createElement('SafeAreaView')
+  const el = document.createElement('Text')
+  el.textContent = 'hello world'
+  saView.appendChild(el)
+  setTimeout(() => {
+    el.textContent = 'hello reaper'
+  }, 2500)
+  document.appendChild(saView)
+}
 
+export default App
