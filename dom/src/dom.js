@@ -16,6 +16,8 @@ const INSTANCES = new WeakMap()
 const NODES = new WeakMap()
 
 let VIEWS_RENDERED = false
+let pChain = Promise.resolve()
+let renderQ = []
 
 export const REACT_ELEMENT_TYPE =
   (typeof Symbol != 'undefined' && Symbol.for && Symbol.for('react.element')) ||
@@ -29,10 +31,6 @@ const TYPES = {
     type: 'Document',
   },
 }
-
-let renderQ = []
-
-const pChain = Promise.resolve()
 
 const bridge = {
   currentId: 0,
@@ -108,6 +106,28 @@ class Node {
     NODES.set(binding, this)
   }
 
+  get parentNode() {
+    return this.parent
+  }
+
+  set parentNode(node) {
+    this.parent = node
+  }
+
+  get childNodes() {
+    return this.children
+  }
+
+  get firstChild() {
+    return this.children.length > 0 ? this.children[0] : null
+  }
+
+  get lastChild() {
+    return this.children.length > 0
+      ? this.children[this.children.length - 1]
+      : null
+  }
+
   appendChild(node) {
     node.parent = this
     this.children.push(node)
@@ -116,6 +136,7 @@ class Node {
 
   removeChild(node) {
     this.children.filter(x => x[BINDING].id === node[BINDING].id)
+    this[BINDING].updateChildren()
   }
 
   get ref() {
