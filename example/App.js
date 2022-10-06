@@ -1,4 +1,5 @@
 import { createDOM, registerNativeDOM } from '@barelyhuman/preact-native/dom'
+import { Component, h, render } from 'preact'
 
 let document
 
@@ -11,14 +12,28 @@ function App({ rootTag }) {
 }
 
 function onRender() {
-  const saView = document.createElement('SafeAreaView')
-  const el = document.createElement('Text')
-  el.textContent = 'hello world'
-  saView.appendChild(el)
-  setTimeout(() => {
-    el.textContent = 'hello reaper'
-  }, 2500)
-  document.appendChild(saView)
+  try {
+    const jsx = h(RenderableComponent, {})
+    render(jsx, document)
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+class RenderableComponent extends Component {
+  state = {
+    count: 0,
+  }
+
+  componentDidMount() {
+    setInterval(()=>{
+      this.setState({ count: this.state.count + 1 }) 
+    },1000)
+  }
+
+  render() {
+    return h('Text', {}, `Count ${this.state.count}`)
+  }
 }
 
 export default App
