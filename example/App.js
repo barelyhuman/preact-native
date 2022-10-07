@@ -7,17 +7,8 @@ function App({ rootTag }) {
   registerNativeDOM()
   document = createDOM(rootTag)
   global.document = document
-  onRender()
+  render(h(RenderableComponent, {}), document)
   return null
-}
-
-function onRender() {
-  try {
-    const jsx = h(RenderableComponent, {})
-    render(jsx, document)
-  } catch (err) {
-    console.log(err)
-  }
 }
 
 class RenderableComponent extends Component {
@@ -26,13 +17,13 @@ class RenderableComponent extends Component {
   }
 
   componentDidMount() {
-    setInterval(()=>{
-      this.setState({ count: this.state.count + 1 }) 
-    },1000)
+    setInterval(() => {
+      this.setState({ count: this.state.count + 1 })
+    }, 1000)
   }
 
   render() {
-    return h('Text', {}, `Count ${this.state.count}`)
+    return h('SafeAreaView', {}, h('Text', {}, `Count ${this.state.count}`))
   }
 }
 
