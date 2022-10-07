@@ -73,6 +73,8 @@ export default App
 - [ ] Add compat for preact to make it possible for preact to diff and render
       without the need for a react tree generator
       `import {render} from "preact-native/dom"`
+- [ ] Handle events (presses, input, gestures) , aka events from preact will be on the DOM, need to be proxied as events to the Native SDK 
+- [ ] Handling for Bridge level style props 
 
 ## Contribute
 
