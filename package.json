@@ -4,16 +4,25 @@
   "description": "",
   "license": "MIT",
   "author": "",
+  "repository": "barelyhuman/preact-native",
+  "bugs": "https://github.com/barelyhuman/preact-native/issues",
   "publishConfig": {
     "access": "public"
   },
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "browser": "./dist/index.module.js",
       "umd": "./dist/index.umd.js",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
+    },
+    "./dom": {
+      "types": "./dom/dist/index.d.ts",
+      "browser": "./dom/dist/index.module.js",
+      "umd": "./dom/dist/index.umd.js",
+      "import": "./dom/dist/index.mjs",
+      "require": "./dom/dist/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -28,25 +37,31 @@
     "dist"
   ],
   "scripts": {
-    "build": "microbundle build --raw --generateTypes -f cjs,esm,umd",
+    "nuke": "find . -name 'node_modules' -type d -prune | xargs rm -rf",
+    "build": "npm-run-all --parallel build:*",
+    "build:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom",
+    "dev:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom --watch",
+    "example:start": "cd example;yarn start",
+    "example:ios": "cd example; yarn ios",
+    "example:android": "cd example; yarn android",
     "fix": "npx prettier --write .",
     "next": "bumpp --tag --commit"
   },
   "prettier": "@barelyhuman/prettier-config",
-  "dependencies": {
-    "mitt": "^3.0.0",
-    "undom": "^0.4.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
     "bumpp": "^8.2.1",
     "microbundle": "^0.15.1",
+    "npm-run-all": "^4.1.5",
     "preact": "^10.11.0",
     "prettier": "^2.7.1",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "react-native": "^0.70.1"
   },
   "peerDependencies": {
     "preact": ">10",
-    "react": ">17"
+    "react": ">=17",
+    "react-native": ">=0.65"
   }
 }
