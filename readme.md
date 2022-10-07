@@ -22,39 +22,39 @@ $ npm install @barelyhuman/preact-native preact
 2. Change the App.js to this
 
 ```js
-// import the host components from react native
-import { Text } from 'react-native'
+import { createDOM, registerNativeDOM } from '@barelyhuman/preact-native/dom'
+import { Component, h, render } from 'preact'
 
-// import the dom creation helpers from
-// preact-native dom
-import {
-  Document,
-  render,
-  registerHostElement,
-} from '@barelyhuman/preact-native/dom'
+let document
 
-// create a DOM reference
-global.document = new Document()
-
-// register the host element to the dom
-registerHostElement('Text', Text)
-
-function App() {
-  let count = 0
-
-  // create an element from the one's you registered above
-  const text = document.createElement('Text')
-
-  // set it's text content
-  text.textContent = count
-
-  setInterval(() => {
-    text.textContent = ++count
-  }, 1000)
-
-  // create a react compatible tree
-  return render(text)
+function App({ rootTag }) {
+  // Register native components as dom compatible elements
+  registerNativeDOM()
+  // create a dom with the root container from react native
+  document = createDOM(rootTag)
+  global.document = document
+  // render a preact component to the above DOM
+  render(h(RenderableComponent, {}), document)
+  return null
 }
+
+class RenderableComponent extends Component {
+  state = {
+    count: 0,
+  }
+
+  componentDidMount() {
+    setInterval(() => {
+      this.setState({ count: this.state.count + 1 })
+    }, 1000)
+  }
+
+  render() {
+    return h('SafeAreaView', {}, h('Text', {}, `Count ${this.state.count}`))
+  }
+}
+
+export default App
 ```
 
 > **Note**: All react related stuff (react as a dep and render tree needing
@@ -66,6 +66,8 @@ function App() {
 
 - [x] A minimal dom
 - [ ] Create views from the bridge instead of rendering with react
+  - [x] Create native views (Views created on the iOS and Android platform APIs)
+  - [ ] Create derived views (Views created on top of the above by manipulating the SDK)
 - [x] Update view styles from the bridge
 - [x] Update text nodes from the bridge
 - [ ] Add compat for preact to make it possible for preact to diff and render
