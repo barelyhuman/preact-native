@@ -2,13 +2,10 @@
   "name": "@barelyhuman/preact-native",
   "version": "0.1.1-beta.4",
   "description": "",
+  "bugs": "https://github.com/barelyhuman/preact-native/issues",
+  "repository": "barelyhuman/preact-native",
   "license": "MIT",
   "author": "",
-  "repository": "barelyhuman/preact-native",
-  "bugs": "https://github.com/barelyhuman/preact-native/issues",
-  "publishConfig": {
-    "access": "public"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -45,13 +42,21 @@
     "example:ios": "cd example; yarn ios",
     "example:android": "cd example; yarn android",
     "fix": "npx prettier --write .",
-    "next": "bumpp --tag --commit"
+    "next": "bumpp --tag --commit",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.{js,mjs,ts,tsx,json,md}": [
+      "prettier --write"
+    ]
   },
   "prettier": "@barelyhuman/prettier-config",
   "dependencies": {},
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
     "bumpp": "^8.2.1",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
     "microbundle": "^0.15.1",
     "npm-run-all": "^4.1.5",
     "preact": "^10.11.0",
@@ -63,5 +68,8 @@
     "preact": ">10",
     "react": ">=17",
     "react-native": ">=0.65"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
