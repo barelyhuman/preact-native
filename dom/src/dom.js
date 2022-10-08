@@ -1,4 +1,5 @@
-import { UIManager, DevSettings } from 'react-native'
+import { UIManager } from 'react-native'
+import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
 
 /**
  * @todo: figure out a way to handle refresh based renders
@@ -12,11 +13,12 @@ const CURRENT_STYLE = Symbol.for('current')
 const OWNER_NODE = Symbol.for('owner')
 
 const BINDINGS = new Map()
-const INSTANCES = new WeakMap()
-const NODES = new WeakMap()
+let INSTANCES = new WeakMap()
+let NODES = new WeakMap()
 
 let VIEWS_RENDERED = false
 let pChain = Promise.resolve()
+let processing = false
 let renderQ = []
 
 export const REACT_ELEMENT_TYPE =
@@ -41,6 +43,13 @@ const bridge = {
     const node = NODES.get(binding)
 
     switch (method) {
+      case 'clear': {
+        const childIndices = (node.childNodes || []).map((_, i) => i)
+        try {
+          UIManager.manageChildren(ROOT_TAG, [], [], [], [], childIndices)
+        } catch (err) {}
+        break
+      }
       case 'create': {
         const type = params[1]
         if (type === '#document') {
@@ -65,18 +74,39 @@ const bridge = {
         updateNodeProps(id)
         break
       }
-      case 'updateChildren': {
+      case 'moveChild': {
+        const fromIndex = params[1]
+        const toIndex = params[2]
+        UIManager.manageChildren(
+          id, // containerID
+          [fromIndex], // moveFromIndices
+          [toIndex], // moveToIndices
+          [], // addChildReactTags
+          [], // addAtIndices
+          [] // removeAtIndices
+        )
+        break
+      }
+      case 'appendChild': {
+        let parentTag = id
+        const toAdd = params[1]
         if (binding.type === '#document') {
-          UIManager.setChildren(
-            ROOT_TAG,
-            node.children.map(x => x[BINDING].id)
-          )
-        } else {
-          UIManager.setChildren(
-            binding.id,
-            node.children.map(x => x[BINDING].id)
-          )
+          parentTag = ROOT_TAG
+          console.log('appending to root', ROOT_TAG)
         }
+        UIManager.setChildren(parentTag, [toAdd])
+        break
+      }
+      case 'removeChild': {
+        const removeAt = params[1]
+        UIManager.manageChildren(
+          id, // containerID
+          [], // moveFromIndices
+          [], // moveToIndices
+          [], // addChildReactTags
+          [], // addAtIndices
+          [removeAt] // removeAtIndices
+        )
         break
       }
     }
@@ -88,7 +118,10 @@ const bridge = {
         params,
       }) === 1
     ) {
-      pChain.then(process)
+      if (typeof ROOT_TAG != null && !processing) {
+        processing = true
+        pChain = pChain.then(process)
+      }
     }
   },
 }
@@ -130,13 +163,30 @@ class Node {
 
   appendChild(node) {
     node.parent = this
-    this.children.push(node)
-    this[BINDING].updateChildren()
+    const existingChild = this.children.findIndex(
+      x => x[BINDING].id === node[BINDING].id
+    )
+    if (existingChild > -1) {
+      this.children.splice(existingChild, 1)
+      this.children.push(node)
+      this[BINDING].moveChild(existingChild, this.children.length - 1)
+    } else {
+      this.children.push(node)
+      this[BINDING].appendChild(node[BINDING].id)
+    }
   }
 
   removeChild(node) {
-    this.children.filter(x => x[BINDING].id === node[BINDING].id)
-    this[BINDING].updateChildren()
+    let index = -1
+    this.children.filter((x, i) => {
+      if (x[BINDING].id === node[BINDING].id) {
+        index = i
+      }
+      return x[BINDING].id !== node[BINDING].id
+    })
+    if (index > -1) {
+      this[BINDING].removeChild(index)
+    }
   }
 
   get ref() {
@@ -148,9 +198,12 @@ class Node {
 }
 
 class Element extends Node {
-  constructor(type) {
+  constructor(type, reset) {
     super(type)
     this.style = createStyleBinding(this[BINDING].id)
+    if (reset) {
+      this[BINDING].clear()
+    }
     this[BINDING].create()
   }
 
@@ -240,7 +293,6 @@ class Element extends Node {
       ref: x => {
         if (!VIEWS_RENDERED) {
           VIEWS_RENDERED = true
-          pChain.then(process)
         }
         _self.ref = x
         INSTANCES.set(this[BINDING], x)
@@ -280,7 +332,7 @@ class Text extends Node {
 export class Document extends Element {
   constructor(rootTag) {
     ROOT_TAG = rootTag
-    super('#document')
+    super('#document', true)
   }
 
   createElement(type) {
@@ -310,12 +362,20 @@ export function render(node) {
 }
 
 function createBinding(node) {
-  const id = ++bridge.currentId
+  let nextId = ++bridge.currentId
+  if (nextId === ROOT_TAG) {
+    nextId = ++bridge.currentId
+  }
+  const id = nextId
   const props = new Map()
   return {
     id,
     props,
     type: node.localName,
+    clear() {
+      renderQ = []
+      bridge.enqueue('clear', [id])
+    },
     create() {
       bridge.enqueue('create', [id, node.localName])
     },
@@ -333,25 +393,97 @@ function createBinding(node) {
       }
       return res
     },
-    updateChildren() {
-      bridge.enqueue('updateChildren', [id])
+    moveChild(x, y) {
+      bridge.enqueue('moveChild', [id, x, y])
+    },
+    appendChild(nodeId) {
+      bridge.enqueue('appendChild', [id, nodeId])
+    },
+    removeChild(atIndex) {
+      bridge.enqueue('removeChild', [id, atIndex])
     },
   }
 }
 
 function process() {
-  let toProcess
-  while ((toProcess = renderQ.shift())) {
-    bridge.call(toProcess.method, toProcess.params)
+  let methodDef = renderQ.shift()
+  if (methodDef) {
+    dispatch(methodDef)
+    setTimeout(() => {
+      process()
+    }, 10)
+  } else {
+    processing = false
   }
+}
+
+function dispatch(methodDef) {
+  bridge.call(methodDef.method, methodDef.params)
 }
 
 function updateNodeProps(id) {
   const binding = BINDINGS.get(id)
   const instance = INSTANCES.get(binding)
   const props = Object.fromEntries(binding.props)
+
   if (instance) {
     instance.setNativeProps(props)
+  }
+
+  if (TYPES[binding.type]) {
+    const managerName = TYPES[binding.type].type
+    const viewConfig = getNativeComponentAttributes(managerName)
+    const validProps = processProps(props, viewConfig.validAttributes)
+    UIManager.updateView(id, viewConfig.uiViewClassName, validProps)
+  }
+}
+
+function processProps(props, validAttributes) {
+  const result = {}
+
+  for (var key in props) {
+    if (!validAttributes[key]) {
+      continue
+    }
+
+    if (key == 'style') {
+      normalizeStyle(props[key])
+    }
+
+    const propItem = props[key]
+    const config = validAttributes[key]
+
+    if (typeof propItem == 'undefined') {
+      continue
+    }
+    result[key] = propItem
+
+    if (typeof propItem == 'object' && typeof config == 'object') {
+      result[key] = processProps(propItem, config)
+    }
+
+    if (typeof config.process == 'function') {
+      result[key] = config.process(propItem)
+    }
+  }
+
+  // flatten styles to the top level props
+  Object.assign(result, result.style)
+
+  return result
+}
+
+function normalizeStyle(styleProps) {
+  for (let key in styleProps) {
+    const old = styleProps[key]
+    try {
+      styleProps[key] = styleProps[key].replace(/(px)/g, '')
+      if (!isNaN(styleProps[key])) {
+        styleProps[key] = Number(styleProps[key])
+      }
+    } catch (err) {
+      styleProps[key] = old
+    }
   }
 }
 
@@ -387,19 +519,9 @@ function createStyleBinding(id) {
   return new Proxy(style, STYLE_PROXY)
 }
 
-function onRefresh(cb) {
-  if (__DEV__) {
-    let oldRefresh = DevSettings.onFastRefresh
-    DevSettings.onFastRefresh = () => {
-      cb && cb()
-      oldRefresh && oldRefresh()
-    }
-  }
-}
-
-function noop() {}
-
 export function createDOM(rootTag) {
-  onRefresh(noop)
-  return new Document(rootTag)
+  bridge.currentId = 0
+  BINDINGS.clear()
+  const rootNode = new Document(rootTag)
+  return rootNode
 }
