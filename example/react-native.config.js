@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('path')
 
 module.exports = {
   dependencies: {
@@ -6,4 +6,4 @@ module.exports = {
       root: path.join(__dirname, '..'),
     },
   },
-};
+}
