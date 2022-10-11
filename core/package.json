@@ -1,0 +1,22 @@
+{
+  "name": "core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Wrapper native components for preact",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "browser": "./dist/core.module.js",
+      "umd": "./dist/core.umd.js",
+      "import": "./dist/core.mjs",
+      "require": "./dist/core.js"
+    }
+  },
+  "main": "dist/core.js",
+  "module": "dist/core.module.js",
+  "source": "src/index.js",
+  "peerDependencies": {
+    "preact": ">=10",
+    "@barelyhuman/preact-native": "*"
+  }
+}
