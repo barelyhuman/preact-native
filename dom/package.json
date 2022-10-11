@@ -4,6 +4,7 @@
   "private": true,
   "description": "Native dom implementation layer over react-native",
   "license": "MIT",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "browser": "./dist/dom.module.js",

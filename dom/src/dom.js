@@ -1,16 +1,14 @@
 import { UIManager } from 'react-native'
 import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
-
-/**
- * @todo: figure out a way to handle refresh based renders
- * for things like safe area and text appends
- */
+import './event-responder'
 
 let ROOT_TAG
 
 const BINDING = Symbol.for('binding')
 const CURRENT_STYLE = Symbol.for('current')
 const OWNER_NODE = Symbol.for('owner')
+const IS_TRUSTED = Symbol.for('isTrusted')
+const LISTENERS = Symbol.for('listeners')
 
 const BINDINGS = new Map()
 let INSTANCES = new WeakMap()
@@ -34,10 +32,9 @@ const TYPES = {
   },
 }
 
-const bridge = {
+export const bridge = {
   currentId: 0,
   call(method, params) {
-    console.log({ method, params })
     const id = params[0]
     const binding = BINDINGS.get(id)
     const node = NODES.get(binding)
@@ -92,7 +89,6 @@ const bridge = {
         const toAdd = params[1]
         if (binding.type === '#document') {
           parentTag = ROOT_TAG
-          console.log('appending to root', ROOT_TAG)
         }
         UIManager.setChildren(parentTag, [toAdd])
         break
@@ -109,6 +105,10 @@ const bridge = {
         )
         break
       }
+      case 'event': {
+        bridge.handleEvent('event', params)
+        break
+      }
     }
   },
   enqueue(method, params) {
@@ -122,6 +122,23 @@ const bridge = {
         processing = true
         pChain = pChain.then(process)
       }
+    }
+  },
+  handleEvent(method, params) {
+    const targetId = params[0]
+    switch (method) {
+      case 'event':
+        // Simple click handling for now
+        const touchEnded = params[1] === 'topTouchEnd'
+        const target = BINDINGS.get(targetId)
+
+        if (touchEnded && target) {
+          target.dispatchEvent({
+            type: 'click',
+            event: params[2],
+          })
+        }
+        break
     }
   },
 }
@@ -201,6 +218,9 @@ class Element extends Node {
   constructor(type, reset) {
     super(type)
     this.style = createStyleBinding(this[BINDING].id)
+    Object.defineProperty(this, LISTENERS, {
+      value: new Map(),
+    })
     if (reset) {
       this[BINDING].clear()
     }
@@ -279,9 +299,54 @@ class Element extends Node {
     this[BINDING].removeProp(key)
   }
 
-  addEventListener(type, fn) {
-    const eventUpperText = type[0].toUpperCase() + type.slice(1)
-    this.setAttribute('on' + eventUpperText, fn)
+  addEventListener(type, fn, options = {}) {
+    const all = this[LISTENERS]
+    let list = all.get(type)
+    if (!list) {
+      all.set(type, (list = []))
+    }
+    list.push({
+      _listener: fn,
+      _flags: getListenerFlags(options),
+    })
+  }
+
+  removeEventListener(type, listener, options) {
+    const list = this[LISTENERS].get(type)
+    if (!list) return false
+    const flags = getListenerFlags(options)
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i]
+      if (item._listener === listener && item._flags === flags) {
+        list.splice(i, 1)
+        return true
+      }
+    }
+    return false
+  }
+
+  dispatchEvent(event) {
+    let target = (event.target = this)
+    const path = (event.path = [this, target])
+    while ((target = target.parentNode)) path.push(target)
+    let defaultPrevented = false
+    for (let i = path.length; i--; ) {
+      if (
+        fireEvent(
+          event,
+          path[i],
+          i === 0 ? EVENTPHASE_AT_TARGET : EVENTPHASE_CAPTURE
+        )
+      ) {
+        defaultPrevented = true
+      }
+    }
+    for (let i = 1; i < path.length; i++) {
+      if (fireEvent(event, path[i], EVENTPHASE_BUBBLE)) {
+        defaultPrevented = true
+      }
+    }
+    return !defaultPrevented
   }
 
   render() {
@@ -401,6 +466,18 @@ function createBinding(node) {
     },
     removeChild(atIndex) {
       bridge.enqueue('removeChild', [id, atIndex])
+    },
+    dispatchEvent(eventInfo) {
+      // const [bubbles, cancelable, timestamp, extra] = eventInfo
+      const type = eventInfo.type
+      const timestamp = eventInfo.event.timestamp
+      const bubbles = false
+      const cancelable = false
+      const event = new Event(type, bubbles, cancelable, timestamp)
+      // if (extra !== undefined) Object.assign(event, extra)
+      event[IS_TRUSTED] = true
+      event.nativeEvent = eventInfo.event
+      node.dispatchEvent(event)
     },
   }
 }
@@ -524,4 +601,101 @@ export function createDOM(rootTag) {
   BINDINGS.clear()
   const rootNode = new Document(rootTag)
   return rootNode
+}
+
+class Event {
+  constructor(type, bubbles, cancelable, timeStamp) {
+    Object.defineProperty(this, IS_TRUSTED, { value: false })
+    this.type = type
+    this.bubbles = bubbles
+    this.cancelable = cancelable
+    this.target = null
+    this.nativeEvent = null
+    this.currentTarget = null
+    this.inPassiveListener = false
+    this.defaultPrevented = false
+    this.cancelBubble = false
+    this.immediatePropagationStopped = false
+    this.data = undefined
+  }
+  get isTrusted() {
+    return this[IS_TRUSTED]
+  }
+  stopPropagation() {
+    this.cancelBubble = true
+  }
+  stopImmediatePropagation() {
+    this.immediatePropagationStopped = true
+  }
+  preventDefault() {
+    this.defaultPrevented = true
+  }
+  set returnValue(v) {
+    this.defaultPrevented = v
+  }
+  get returnValue() {
+    return this.defaultPrevented
+  }
+}
+
+const EVENTPHASE_NONE = 0
+const EVENTPHASE_BUBBLE = 1
+const EVENTPHASE_CAPTURE = 2
+const EVENTPHASE_PASSIVE = 4
+const EVENTPHASE_AT_TARGET = 5
+const EVENTOPT_ONCE = 8
+
+// Flags are easier to compare for listener lookups
+function getListenerFlags(options) {
+  if (typeof options === 'object' && options) {
+    let flags = options.capture ? EVENTPHASE_CAPTURE : EVENTPHASE_BUBBLE
+    if (options.passive) flags &= EVENTPHASE_PASSIVE
+    if (options.once) flags &= EVENTOPT_ONCE
+    return flags
+  }
+  return options ? EVENTPHASE_CAPTURE : EVENTPHASE_BUBBLE
+}
+
+function fireEvent(event, target, phase) {
+  const list = target[LISTENERS].get(event.type)
+  if (!list) return
+  // let error;
+  let defaultPrevented = false
+  // use forEach for freezing
+  const frozen = list.slice()
+  for (let i = 0; i < frozen.length; i++) {
+    const item = frozen[i]
+    const fn = item._listener
+    event.eventPhase = phase
+    // the bridge is async, so events are always passive.
+    //event.inPassiveListener = passive;
+    event.currentTarget = target
+    try {
+      let ret = fn.call(target, event)
+      if (ret === false) {
+        event.defaultPrevented = true
+      }
+    } catch (e) {
+      //error = e;
+      setTimeout(thrower, 0, e)
+    }
+    // @ts-ignore
+    // FIXME: the binary shift is always going to be true, need to
+    // handle based on options
+    if (item._flags & (EVENTOPT_ONCE !== 0)) {
+      // list.splice(list.indexOf(item), 1)
+    }
+    if (event.defaultPrevented === true) {
+      defaultPrevented = true
+    }
+    if (event.immediatePropagationStopped) {
+      break
+    }
+  }
+  // if (error !== undefined) throw error;
+  return defaultPrevented
+}
+
+function thrower(error) {
+  throw error
 }
