@@ -1,6 +1,6 @@
 import { UIManager } from 'react-native'
 import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
-import './event-responder'
+import ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
 
 let ROOT_TAG
 
@@ -9,6 +9,10 @@ const CURRENT_STYLE = Symbol.for('current')
 const OWNER_NODE = Symbol.for('owner')
 const IS_TRUSTED = Symbol.for('isTrusted')
 const LISTENERS = Symbol.for('listeners')
+
+const EVENT_TYPES = {
+  CLICK: 'Click',
+}
 
 const BINDINGS = new Map()
 let INSTANCES = new WeakMap()
@@ -62,6 +66,7 @@ export const bridge = {
         } else {
           UIManager.createView(binding.id, rawViewClass.type, ROOT_TAG, {})
         }
+
         break
       }
       case 'setProp': {
@@ -71,26 +76,64 @@ export const bridge = {
         updateNodeProps(id)
         break
       }
-      case 'moveChild': {
-        const fromIndex = params[1]
-        const toIndex = params[2]
+      case 'appendChild': {
+        let parentTag = id
+        const toAdd = params[1]
+
+        if (binding.type === '#document') {
+          parentTag = ROOT_TAG
+        }
+
+        UIManager.setChildren(parentTag, [toAdd])
+
+        // TODO: benchmark between this and setting and fetching from a Map
+        // and change accordingly, slowing this down could cause a glitchy interface
+        const repositionExists = renderQ.findIndex(
+          x => x.method === 'repositionChildren' && x.params[0] == id
+        )
+
+        if (repositionExists > -1) {
+          renderQ.splice(repositionExists, 1)
+        }
+
+        // setChildren adds to the end but Native seems to be
+        // rendering in the bottom-up direction, reposition
+        // will just reverse the order and doesn't need to executed
+        // a hundered times or on each append so the above
+        // checks if there's already a task for this id in the queue
+        bridge.enqueue('repositionChildren', [id])
+
+        break
+      }
+      case 'repositionChildren': {
+        const from = []
+        const to = []
+        node.children.forEach((_, i) => {
+          const nextIndex = node.children.length - 1 - i
+          from.push(i)
+          to.push(nextIndex)
+        })
         UIManager.manageChildren(
           id, // containerID
-          [fromIndex], // moveFromIndices
-          [toIndex], // moveToIndices
+          from, // moveFromIndices
+          to, // moveToIndices
           [], // addChildReactTags
           [], // addAtIndices
           [] // removeAtIndices
         )
         break
       }
-      case 'appendChild': {
-        let parentTag = id
-        const toAdd = params[1]
-        if (binding.type === '#document') {
-          parentTag = ROOT_TAG
-        }
-        UIManager.setChildren(parentTag, [toAdd])
+      case 'moveChild': {
+        const moveFrom = params[1]
+        const moveTo = params[2]
+        UIManager.manageChildren(
+          id, // containerID
+          [moveFrom], // moveFromIndices
+          [moveFrom], // moveToIndices
+          [], // addChildReactTags
+          [], // addAtIndices
+          [] // removeAtIndices
+        )
         break
       }
       case 'removeChild': {
@@ -129,16 +172,19 @@ export const bridge = {
     switch (method) {
       case 'event':
         // Simple click handling for now
-        const touchEnded = params[1] === 'topTouchEnd'
-        const target = BINDINGS.get(targetId)
-
-        if (touchEnded && target) {
-          target.dispatchEvent({
-            type: 'click',
-            event: params[2],
-          })
+        if (isClickEvent(params[1])) {
+          bridge.handleClickEvent(targetId, params[2])
         }
         break
+    }
+  },
+  handleClickEvent(targetId, nativeEvent) {
+    const target = BINDINGS.get(targetId)
+    if (target) {
+      target.dispatchEvent({
+        type: EVENT_TYPES.CLICK,
+        event: nativeEvent,
+      })
     }
   },
 }
@@ -186,7 +232,11 @@ class Node {
     if (existingChild > -1) {
       this.children.splice(existingChild, 1)
       this.children.push(node)
-      this[BINDING].moveChild(existingChild, this.children.length - 1)
+      this[BINDING].moveChild(
+        node[BINDING].id,
+        existingChild,
+        this.children.length - 1
+      )
     } else {
       this.children.push(node)
       this[BINDING].appendChild(node[BINDING].id)
@@ -375,7 +425,7 @@ class Text extends Node {
   constructor(data) {
     super('#text')
     this[BINDING].create()
-    this[BINDING].setProp('text', data)
+    this[BINDING].setProp('text', String(data))
   }
 
   get nodeType() {
@@ -458,8 +508,8 @@ function createBinding(node) {
       }
       return res
     },
-    moveChild(x, y) {
-      bridge.enqueue('moveChild', [id, x, y])
+    moveChild(nodeId, from, to) {
+      bridge.enqueue('moveChild', [id, from, to])
     },
     appendChild(nodeId) {
       bridge.enqueue('appendChild', [id, nodeId])
@@ -699,3 +749,41 @@ function fireEvent(event, target, phase) {
 function thrower(error) {
   throw error
 }
+
+function isClickEvent(eventType) {
+  if (eventType === 'topTouchEnd') {
+    return true
+  }
+  return false
+}
+
+function receiveEvent(rootNodeID, topLevelType, nativeEventParam) {
+  // TODO: need to handle other events
+  console.log({ rootNodeID, topLevelType, nativeEventParam })
+}
+
+function receiveTouches(eventTopLevelType, touches, changedIndices) {
+  if (!touches.length) {
+    return
+  }
+
+  const touch = touches[0]
+
+  const nativeEvent = touch
+  let nodeId = nativeEvent.target < 1 ? null : touch.target
+
+  if (!nodeId) {
+    return
+  }
+
+  executeTouchEvent(nodeId, eventTopLevelType, nativeEvent)
+}
+
+function executeTouchEvent(nodeId, eventTopLevelType, nativeEvent = {}) {
+  bridge.enqueue('event', [nodeId, eventTopLevelType, nativeEvent])
+}
+
+ReactNativePrivateInterface.RCTEventEmitter.register({
+  receiveEvent: receiveEvent,
+  receiveTouches: receiveTouches,
+})
