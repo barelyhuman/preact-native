@@ -56,7 +56,6 @@ export const bridge = {
         if (type === '#document') {
           break
         }
-
         const rawViewClass = TYPES[type]
 
         if (type === '#text') {
@@ -129,7 +128,7 @@ export const bridge = {
         UIManager.manageChildren(
           id, // containerID
           [moveFrom], // moveFromIndices
-          [moveFrom], // moveToIndices
+          [moveTo], // moveToIndices
           [], // addChildReactTags
           [], // addAtIndices
           [] // removeAtIndices
@@ -377,7 +376,7 @@ class Element extends Node {
 
   dispatchEvent(event) {
     let target = (event.target = this)
-    const path = (event.path = [this, target])
+    const path = (event.path = [this])
     while ((target = target.parentNode)) path.push(target)
     let defaultPrevented = false
     for (let i = path.length; i--; ) {
@@ -556,7 +555,6 @@ function updateNodeProps(id) {
   if (instance) {
     instance.setNativeProps(props)
   }
-
   if (TYPES[binding.type]) {
     const managerName = TYPES[binding.type].type
     const viewConfig = getNativeComponentAttributes(managerName)
