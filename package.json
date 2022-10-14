@@ -8,17 +8,17 @@
   "author": "",
   "main": "./core/dist/core.js",
   "module": "./core/dist/core.mjs",
-  "types": "./core/dist/core.d.ts",
+  "types": "./core/src/core.d.ts",
   "exports": {
     ".": {
-      "types": "./core/dist/core.d.ts",
+      "types": "./core/src/core.d.ts",
       "browser": "./core/dist/core.module.js",
       "umd": "./core/dist/core.umd.js",
       "import": "./core/dist/core.mjs",
       "require": "./core/dist/core.js"
     },
     "./dom": {
-      "types": "./dom/dist/index.d.ts",
+      "types": "./dom/src/index.d.ts",
       "browser": "./dom/dist/index.module.js",
       "umd": "./dom/dist/index.umd.js",
       "import": "./dom/dist/index.mjs",
@@ -35,11 +35,11 @@
   "scripts": {
     "nuke": "find . -name 'node_modules' -type d -prune | xargs rm -rf",
     "build": "npm-run-all --parallel build:*",
-    "build:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom",
-    "build:core": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd core",
+    "build:dom": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd dom",
+    "build:core": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd core",
     "dev": "npm-run-all --parallel dev:*",
-    "dev:dom": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd dom --watch",
-    "dev:core": "microbundle build --raw --generateTypes -f cjs,esm,umd --cwd core --watch",
+    "dev:dom": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd dom --watch",
+    "dev:core": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd core --watch",
     "example:start": "cd example;yarn start",
     "example:ios": "cd example; yarn ios",
     "example:android": "cd example; yarn android",
