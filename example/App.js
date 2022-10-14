@@ -1,14 +1,14 @@
-import {
-  createDOM,
-  registerNativeDOM,
-  SafeAreaView,
-  View,
-  Text,
-} from '@barelyhuman/preact-native'
-import { Alert } from 'react-native'
-
 /** @jsxImportSource preact */
-import { Component, render } from 'preact'
+
+import {
+  TextInput,
+  Text,
+  View,
+  SafeAreaView,
+} from '@barelyhuman/preact-native/core'
+import { registerNativeDOM, createDOM } from '@barelyhuman/preact-native/dom'
+import { Component, render, h } from 'preact'
+import { Alert } from 'react-native'
 
 let document
 
@@ -39,17 +39,55 @@ class Renderable extends Component {
     const { count } = this.state
     return (
       <>
-        <SafeAreaView>
+        <SafeAreaView backgroundColor="#181819">
           <View
-            backgroundColor="black"
-            margin={10}
-            borderRadius={10}
-            justifyContent="center"
-            alignItems="center"
+            height="100%"
+            width="100%"
             padding={10}
-            onClick={this.handleClick}
+            alignItems="center"
+            justifyContent="center"
           >
-            <Text color="white">Count {count}</Text>
+            <TextInput
+              width={'100%'}
+              height={52}
+              marginBottom={8}
+              padding={10}
+              placeholder="email"
+              borderRadius={10}
+              borderWidth={1}
+              borderColor="slategray"
+              color="white"
+              backgroundColor="transparent"
+            />
+            <TextInput
+              width={'100%'}
+              height={52}
+              marginBottom={8}
+              padding={10}
+              placeholder="password"
+              secureTextEntry={true}
+              borderRadius={10}
+              borderWidth={1}
+              borderColor="slategray"
+              color="white"
+              backgroundColor="transparent"
+            />
+            <View
+              height={52}
+              padding={15}
+              width={'100%'}
+              borderRadius={6}
+              justifyContent="center"
+              alignItems="center"
+              backgroundColor="white"
+              onClick={() => {
+                Alert.alert('Yeah, no, not happening')
+              }}
+            >
+              <Text fontSize={16} fontWeight="bold">
+                Login
+              </Text>
+            </View>
           </View>
         </SafeAreaView>
       </>

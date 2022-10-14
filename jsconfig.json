@@ -6,11 +6,10 @@
     "lib": ["dom", "es5"],
     "skipLibCheck": true,
     "noEmit": false,
-    "declaration": true,
-    "emitDeclarationOnly": true,
     "moduleResolution": "node",
     "target": "es5",
     "outDir": "dist",
+    "esModuleInterop": true,
     "paths": {
       "@barelyhuman/preact-native": ["."],
       "@barelyhuman/preact-native/*": ["./*"]

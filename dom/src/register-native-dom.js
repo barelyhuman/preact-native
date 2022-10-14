@@ -9,5 +9,6 @@ export function registerNativeDOM() {
     const withoutNativeName = constName.replace(/^RCT/, '')
     ITEMS.push([withoutNativeName, constName])
   })
+
   ITEMS.forEach(x => registerHostElement(x[0], x[1], x[2]))
 }

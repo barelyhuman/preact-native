@@ -11,3 +11,11 @@ export function View({ ...props }) {
 export function Text({ ...props }) {
   return h('Text', props)
 }
+
+export function TextInput({ ...props }) {
+  const text = props.value
+  const baseComponentName = props.multiline
+    ? 'MultilineTextInputView'
+    : 'SinglelineTextInputView'
+  return h(baseComponentName, { ...props, text })
+}
