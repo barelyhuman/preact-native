@@ -8,6 +8,7 @@ import {
 } from '@barelyhuman/preact-native/core'
 import { registerNativeDOM, createDOM } from '@barelyhuman/preact-native/dom'
 import { Component, render, h } from 'preact'
+import { signal } from '@preact/signals'
 import { Alert } from 'react-native'
 
 let document
@@ -19,24 +20,39 @@ function App({ rootTag }) {
   // create a dom with the root container from react native
   document = createDOM(rootTag)
   global.document = document
-  render(<Renderable />, document)
+  render(<TestRenderable />, document)
 }
 
-class Renderable extends Component {
-  state = { count: 0 }
+const count = signal(0)
 
-  constructor(props) {
-    super(props)
-    this.handleClick = this.handleClick.bind(this)
+function Counter() {
+  const handleClick = () => {
+    count.value += 1
   }
 
-  handleClick() {
-    const { count } = this.state
-    this.setState({ count: count + 1 })
+  return (
+    <>
+      <SafeAreaView>
+        <Text fontSize={20} margin={10} color="white">
+          {count.value}
+        </Text>
+        <View onClick={handleClick}>
+          <Text fontSize={20} margin={10} color="white">
+            Inc
+          </Text>
+        </View>
+      </SafeAreaView>
+    </>
+  )
+}
+
+class TestRenderable extends Component {
+  state = { email: '' }
+  constructor(props) {
+    super(props)
   }
 
   render() {
-    const { count } = this.state
     return (
       <>
         <SafeAreaView backgroundColor="#181819">
@@ -57,7 +73,17 @@ class Renderable extends Component {
               borderWidth={1}
               borderColor="slategray"
               color="white"
+              value={this.state.email}
               backgroundColor="transparent"
+              onFocus={e => {
+                console.log('focus')
+              }}
+              onBlur={e => {
+                console.log('blur')
+              }}
+              onChange={e => {
+                this.setState({ email: e.data })
+              }}
             />
             <TextInput
               width={'100%'}
@@ -81,7 +107,7 @@ class Renderable extends Component {
               alignItems="center"
               backgroundColor="white"
               onClick={() => {
-                Alert.alert('Yeah, no, not happening')
+                Alert.alert(`Oh hey, ${this.state.email}`)
               }}
             >
               <Text fontSize={16} fontWeight="bold">

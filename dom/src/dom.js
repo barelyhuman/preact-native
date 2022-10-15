@@ -10,8 +10,15 @@ const OWNER_NODE = Symbol.for('owner')
 const IS_TRUSTED = Symbol.for('isTrusted')
 const LISTENERS = Symbol.for('listeners')
 
+const KEYBOARD_EVENTS = ['topFocus', 'topEndEditing']
+const FOCUS_EVENTS = ['topFocus']
+const BLUR_EVENTS = ['topBlur']
+
 const EVENT_TYPES = {
   CLICK: 'Click',
+  CHANGE: 'Change',
+  FOCUS: 'Focus',
+  BLUR: 'Blur',
 }
 
 const BINDINGS = new Map()
@@ -39,6 +46,7 @@ const TYPES = {
 export const bridge = {
   currentId: 0,
   call(method, params) {
+    console.log({ method, params })
     const id = params[0]
     const binding = BINDINGS.get(id)
     const node = NODES.get(binding)
@@ -154,6 +162,8 @@ export const bridge = {
     }
   },
   enqueue(method, params) {
+    // FIXME: add handling to avoid consecutive duplicate
+    // processes in the queue
     if (
       renderQ.push({
         method,
@@ -170,10 +180,24 @@ export const bridge = {
     const targetId = params[0]
     switch (method) {
       case 'event':
-        // Simple click handling for now
+        // separated into 3 for further handling
+        // down the road
+        // since clicks can have double taps
+        // gestures etc
+        // and keyboards can have edit events, selection events
+        // etc
         if (isClickEvent(params[1])) {
           bridge.handleClickEvent(targetId, params[2])
         }
+
+        if (isKeyboardEvent(params[1])) {
+          bridge.handleKeyboardEvent(targetId, params[2])
+        }
+
+        if (isGenericEvent(params[1])) {
+          bridge.handleGenericEvent(targetId, params[1], params[2])
+        }
+
         break
     }
   },
@@ -182,6 +206,34 @@ export const bridge = {
     if (target) {
       target.dispatchEvent({
         type: EVENT_TYPES.CLICK,
+        event: nativeEvent,
+      })
+    }
+  },
+  handleKeyboardEvent(targetId, nativeEvent) {
+    const target = BINDINGS.get(targetId)
+    if (target) {
+      target.dispatchEvent({
+        type: EVENT_TYPES.CHANGE,
+        event: nativeEvent,
+      })
+    }
+  },
+  handleGenericEvent(targetId, eventType, nativeEvent) {
+    let _eventType
+
+    if (isFocusEvent(eventType)) {
+      _eventType = EVENT_TYPES.FOCUS
+    }
+    if (isBlurEvent(eventType)) {
+      _eventType = EVENT_TYPES.BLUR
+    }
+
+    const target = BINDINGS.get(targetId)
+
+    if (target) {
+      target.dispatchEvent({
+        type: _eventType,
         event: nativeEvent,
       })
     }
@@ -526,6 +578,11 @@ function createBinding(node) {
       // if (extra !== undefined) Object.assign(event, extra)
       event[IS_TRUSTED] = true
       event.nativeEvent = eventInfo.event
+
+      if (type == EVENT_TYPES.CHANGE) {
+        event.data = event.nativeEvent.text
+      }
+
       node.dispatchEvent(event)
     },
   }
@@ -755,9 +812,39 @@ function isClickEvent(eventType) {
   return false
 }
 
+function isGenericEvent(eventType) {
+  if (isFocusEvent(eventType) || isBlurEvent(eventType)) {
+    return true
+  }
+  return false
+}
+
+function isFocusEvent(eventType) {
+  return FOCUS_EVENTS.indexOf(eventType) > -1
+}
+
+function isBlurEvent(eventType) {
+  return BLUR_EVENTS.indexOf(eventType) > -1
+}
+
+function isKeyboardEvent(eventType) {
+  return KEYBOARD_EVENTS.indexOf(eventType) > -1
+}
+
 function receiveEvent(rootNodeID, topLevelType, nativeEventParam) {
   // TODO: need to handle other events
-  console.log({ rootNodeID, topLevelType, nativeEventParam })
+  let nodeId = nativeEventParam.target
+  if (!nodeId) {
+    return
+  }
+
+  if (isGenericEvent(topLevelType)) {
+    executeGenericEvents(nodeId, topLevelType, nativeEventParam)
+  }
+  if (KEYBOARD_EVENTS.indexOf(topLevelType) > -1) {
+    executeKeyboardEvent(nodeId, topLevelType, nativeEventParam)
+  }
+  // console.log({ rootNodeID, topLevelType, nativeEventParam })
 }
 
 function receiveTouches(eventTopLevelType, touches, changedIndices) {
@@ -778,6 +865,14 @@ function receiveTouches(eventTopLevelType, touches, changedIndices) {
 }
 
 function executeTouchEvent(nodeId, eventTopLevelType, nativeEvent = {}) {
+  bridge.enqueue('event', [nodeId, eventTopLevelType, nativeEvent])
+}
+
+function executeGenericEvents(nodeId, eventTopLevelType, nativeEvent = {}) {
+  bridge.enqueue('event', [nodeId, eventTopLevelType, nativeEvent])
+}
+
+function executeKeyboardEvent(nodeId, eventTopLevelType, nativeEvent = {}) {
   bridge.enqueue('event', [nodeId, eventTopLevelType, nativeEvent])
 }
 

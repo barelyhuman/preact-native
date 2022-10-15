@@ -53,7 +53,9 @@
     ]
   },
   "prettier": "@barelyhuman/prettier-config",
-  "dependencies": {},
+  "dependencies": {
+    "@preact/signals": "^1.1.2"
+  },
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
     "bumpp": "^8.2.1",

@@ -1196,6 +1196,18 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@preact/signals-core@^1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@preact/signals-core/-/signals-core-1.2.2.tgz#279dcc5ab249de2f2e8f6e6779b1958256ba843e"
+  integrity sha512-z3/bCj7rRA21RJb4FeJ4guCrD1CQbaURHkCTunUWQpxUMAFOPXCD8tSFqERyGrrcSb4T3Hrmdc1OAl0LXBHwiw==
+
+"@preact/signals@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@preact/signals/-/signals-1.1.2.tgz#a71c9d5dc213e314735420c3a01d84eb392b8739"
+  integrity sha512-MLNNrICSllHBhpXBvXbl7K5L1HmIjuTzgBw+zdODqjM/cLGPXdYiAWt4lqXlrxNavYdoU4eljb+TLE+DRL+6yw==
+  dependencies:
+    "@preact/signals-core" "^1.2.2"
+
 "@react-native-community/cli-clean@^9.1.0":
   version "9.1.0"
   resolved "https://registry.yarnpkg.com/@react-native-community/cli-clean/-/cli-clean-9.1.0.tgz#8d6c3591dbaa52a02bf345dcd79c3a997df6ade5"
