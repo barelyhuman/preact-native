@@ -133,14 +133,15 @@ export const bridge = {
       case 'moveChild': {
         const moveFrom = params[1]
         const moveTo = params[2]
-        UIManager.manageChildren(
-          id, // containerID
-          [moveFrom], // moveFromIndices
-          [moveTo], // moveToIndices
-          [], // addChildReactTags
-          [], // addAtIndices
-          [] // removeAtIndices
-        )
+        // FIXME: breaks existing repositioning
+        // UIManager.manageChildren(
+        //   id, // containerID
+        //   [moveFrom], // moveFromIndices
+        //   [moveTo], // moveToIndices
+        //   [], // addChildReactTags
+        //   [], // addAtIndices
+        //   [] // removeAtIndices
+        // )
         break
       }
       case 'removeChild': {
@@ -163,7 +164,7 @@ export const bridge = {
   },
   enqueue(method, params) {
     // FIXME: add handling to avoid consecutive duplicate
-    // processes in the queue
+    // processes in the queue while letting repositioning work
     if (
       renderQ.push({
         method,
