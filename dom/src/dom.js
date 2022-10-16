@@ -1,6 +1,6 @@
-import { UIManager } from 'react-native'
+import * as UIManager from 'react-native/Libraries/ReactNative/UIManager'
 import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
-import ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
+import * as ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
 
 let ROOT_TAG
 
@@ -432,27 +432,6 @@ class Element extends Node {
     fireEvent(event, target, EVENTPHASE_AT_TARGET)
     let defaultPrevented = false
     return !defaultPrevented
-  }
-
-  render() {
-    const component = TYPES[this.localName].hostComponent
-    const _self = this
-    const reactElement = {
-      type: component,
-      props: {},
-      ref: x => {
-        if (!VIEWS_RENDERED) {
-          VIEWS_RENDERED = true
-        }
-        _self.ref = x
-        INSTANCES.set(this[BINDING], x)
-      },
-    }
-
-    reactElement.props.children = (this.children || []).map(x => x.render())
-    Object.assign(reactElement.props, Object.fromEntries(this[BINDING].props))
-    reactElement.$$typeof = REACT_ELEMENT_TYPE
-    return reactElement
   }
 }
 

@@ -1,2 +1,2 @@
-export * from './dom'
-export * from './register-native-dom'
+export { createDOM } from './dom'
+export { registerNativeDOM } from './register-native-dom'
