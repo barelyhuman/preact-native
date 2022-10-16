@@ -429,25 +429,8 @@ class Element extends Node {
 
   dispatchEvent(event) {
     let target = (event.target = this)
-    const path = (event.path = [this])
-    while ((target = target.parentNode)) path.push(target)
+    fireEvent(event, target, EVENTPHASE_AT_TARGET)
     let defaultPrevented = false
-    for (let i = path.length; i--; ) {
-      if (
-        fireEvent(
-          event,
-          path[i],
-          i === 0 ? EVENTPHASE_AT_TARGET : EVENTPHASE_CAPTURE
-        )
-      ) {
-        defaultPrevented = true
-      }
-    }
-    for (let i = 1; i < path.length; i++) {
-      if (fireEvent(event, path[i], EVENTPHASE_BUBBLE)) {
-        defaultPrevented = true
-      }
-    }
     return !defaultPrevented
   }
 
