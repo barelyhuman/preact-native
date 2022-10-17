@@ -26,7 +26,8 @@ function App({ rootTag }) {
 const count = signal(0)
 
 function Counter() {
-  const handleClick = () => {
+  const handleClick = e => {
+    e.stopPropagation()
     count.value += 1
   }
 
@@ -36,10 +37,13 @@ function Counter() {
         <Text fontSize={20} margin={10} color="white">
           {count.value}
         </Text>
-        <View onClick={handleClick}>
-          <Text fontSize={20} margin={10} color="white">
-            Inc
-          </Text>
+        {/* Additional view to force check bubbling */}
+        <View>
+          <View onClick={handleClick}>
+            <Text fontSize={20} margin={10} color="white">
+              Inc
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     </>
@@ -106,7 +110,8 @@ class TestRenderable extends Component {
               justifyContent="center"
               alignItems="center"
               backgroundColor="white"
-              onClick={() => {
+              onClick={e => {
+                e.stopPropagation()
                 Alert.alert(`Oh hey, ${this.state.email}`)
               }}
             >
