@@ -1,6 +1,6 @@
-import { UIManager } from 'react-native'
+import * as UIManager from 'react-native/Libraries/ReactNative/UIManager'
 import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
-import ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
+import * as ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
 
 let ROOT_TAG
 
@@ -13,6 +13,11 @@ const LISTENERS = Symbol.for('listeners')
 const KEYBOARD_EVENTS = ['topFocus', 'topEndEditing']
 const FOCUS_EVENTS = ['topFocus']
 const BLUR_EVENTS = ['topBlur']
+
+const EVENTPHASE_NONE = 0
+const EVENTPHASE_CAPTURE = 1
+const EVENTPHASE_AT_TARGET = 2
+const EVENTPHASE_BUBBLE = 3
 
 const EVENT_TYPES = {
   CLICK: 'Click',
@@ -409,17 +414,15 @@ class Element extends Node {
     }
     list.push({
       _listener: fn,
-      _flags: getListenerFlags(options),
     })
   }
 
   removeEventListener(type, listener, options) {
     const list = this[LISTENERS].get(type)
     if (!list) return false
-    const flags = getListenerFlags(options)
     for (let i = 0; i < list.length; i++) {
       const item = list[i]
-      if (item._listener === listener && item._flags === flags) {
+      if (item._listener === listener) {
         list.splice(i, 1)
         return true
       }
@@ -429,47 +432,33 @@ class Element extends Node {
 
   dispatchEvent(event) {
     let target = (event.target = this)
-    const path = (event.path = [this])
-    while ((target = target.parentNode)) path.push(target)
+    const bubblePath = []
     let defaultPrevented = false
-    for (let i = path.length; i--; ) {
-      if (
-        fireEvent(
-          event,
-          path[i],
-          i === 0 ? EVENTPHASE_AT_TARGET : EVENTPHASE_CAPTURE
-        )
-      ) {
-        defaultPrevented = true
-      }
-    }
-    for (let i = 1; i < path.length; i++) {
-      if (fireEvent(event, path[i], EVENTPHASE_BUBBLE)) {
-        defaultPrevented = true
-      }
-    }
-    return !defaultPrevented
-  }
 
-  render() {
-    const component = TYPES[this.localName].hostComponent
-    const _self = this
-    const reactElement = {
-      type: component,
-      props: {},
-      ref: x => {
-        if (!VIEWS_RENDERED) {
-          VIEWS_RENDERED = true
+    while (target != null) {
+      bubblePath.push(target)
+      target = target.parentNode
+    }
+
+    for (let i = bubblePath.length; --i; ) {
+      if (fireEvent(event, bubblePath[i], EVENTPHASE_CAPTURE)) {
+        defaultPrevented = true
+      }
+    }
+
+    if (fireEvent(event, this, EVENTPHASE_AT_TARGET)) {
+      defaultPrevented = true
+    }
+
+    if (!event.cancelBubble) {
+      for (let i = 1; i < bubblePath.length; i++) {
+        if (fireEvent(event, bubblePath[i], EVENTPHASE_BUBBLE)) {
+          defaultPrevented = true
         }
-        _self.ref = x
-        INSTANCES.set(this[BINDING], x)
-      },
+      }
     }
 
-    reactElement.props.children = (this.children || []).map(x => x.render())
-    Object.assign(reactElement.props, Object.fromEntries(this[BINDING].props))
-    reactElement.$$typeof = REACT_ELEMENT_TYPE
-    return reactElement
+    return !defaultPrevented
   }
 }
 
@@ -710,7 +699,7 @@ export function createDOM(rootTag) {
 }
 
 class Event {
-  constructor(type, bubbles, cancelable, timeStamp) {
+  constructor(type, bubbles, cancelable) {
     Object.defineProperty(this, IS_TRUSTED, { value: false })
     this.type = type
     this.bubbles = bubbles
@@ -720,16 +709,31 @@ class Event {
     this.currentTarget = null
     this.inPassiveListener = false
     this.defaultPrevented = false
-    this.cancelBubble = false
+    this._stopPropagation = false
     this.immediatePropagationStopped = false
     this.data = undefined
+    this.timestamp = new Date().valueOf()
   }
+
   get isTrusted() {
     return this[IS_TRUSTED]
   }
+
+  get cancelBubble() {
+    return this._stopPropagation
+  }
+
+  set cancelBubble(val) {
+    if (val) {
+      this._stopPropagation = true
+    }
+  }
+
   stopPropagation() {
     this.cancelBubble = true
+    this._stopPropagation = true
   }
+
   stopImmediatePropagation() {
     this.immediatePropagationStopped = true
   }
@@ -744,52 +748,22 @@ class Event {
   }
 }
 
-const EVENTPHASE_NONE = 0
-const EVENTPHASE_BUBBLE = 1
-const EVENTPHASE_CAPTURE = 2
-const EVENTPHASE_PASSIVE = 4
-const EVENTPHASE_AT_TARGET = 5
-const EVENTOPT_ONCE = 8
-
-// Flags are easier to compare for listener lookups
-function getListenerFlags(options) {
-  if (typeof options === 'object' && options) {
-    let flags = options.capture ? EVENTPHASE_CAPTURE : EVENTPHASE_BUBBLE
-    if (options.passive) flags &= EVENTPHASE_PASSIVE
-    if (options.once) flags &= EVENTOPT_ONCE
-    return flags
-  }
-  return options ? EVENTPHASE_CAPTURE : EVENTPHASE_BUBBLE
-}
-
 function fireEvent(event, target, phase) {
   const list = target[LISTENERS].get(event.type)
   if (!list) return
-  // let error;
+
   let defaultPrevented = false
-  // use forEach for freezing
-  const frozen = list.slice()
-  for (let i = 0; i < frozen.length; i++) {
-    const item = frozen[i]
-    const fn = item._listener
+
+  for (const item of Array.from(list)) {
     event.eventPhase = phase
-    // the bridge is async, so events are always passive.
-    //event.inPassiveListener = passive;
     event.currentTarget = target
     try {
-      let ret = fn.call(target, event)
+      let ret = item._listener.call(target, event)
       if (ret === false) {
         event.defaultPrevented = true
       }
     } catch (e) {
-      //error = e;
       setTimeout(thrower, 0, e)
-    }
-    // @ts-ignore
-    // FIXME: the binary shift is always going to be true, need to
-    // handle based on options
-    if (item._flags & (EVENTOPT_ONCE !== 0)) {
-      // list.splice(list.indexOf(item), 1)
     }
     if (event.defaultPrevented === true) {
       defaultPrevented = true
@@ -798,7 +772,6 @@ function fireEvent(event, target, phase) {
       break
     }
   }
-  // if (error !== undefined) throw error;
   return defaultPrevented
 }
 

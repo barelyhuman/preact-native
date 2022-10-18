@@ -1,5 +1,5 @@
 import { registerHostElement } from './dom'
-import { UIManager } from 'react-native'
+import * as UIManager from 'react-native/Libraries/ReactNative/UIManager'
 
 const ITEMS = []
 
