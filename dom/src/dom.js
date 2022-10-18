@@ -19,6 +19,12 @@ const EVENTPHASE_CAPTURE = 1
 const EVENTPHASE_AT_TARGET = 2
 const EVENTPHASE_BUBBLE = 3
 
+const NODE_TYPES = {
+  ELEMENT: 1,
+  TEXT_NODE: 3,
+  DOCUMENT: 9,
+}
+
 const EVENT_TYPES = {
   CLICK: 'Click',
   CHANGE: 'Change',
@@ -250,7 +256,8 @@ class Node {
   children = []
   parent = null
 
-  constructor(name) {
+  constructor(name, nodeType) {
+    this._nodeType = nodeType
     this._nativeInstance = null
     this.localName = name
     const binding = createBinding(this)
@@ -258,6 +265,12 @@ class Node {
     BINDINGS.set(binding.id, binding)
     NODES.set(binding, this)
   }
+
+  get nodeType() {
+    return this._nodeType
+  }
+
+  set nodeType(_readOnly) {}
 
   get parentNode() {
     return this.parent
@@ -275,10 +288,33 @@ class Node {
     return this.children.length > 0 ? this.children[0] : null
   }
 
+  set firstChild(_readOnly) {}
+
   get lastChild() {
     return this.children.length > 0
       ? this.children[this.children.length - 1]
       : null
+  }
+
+  set lastChild(_readOnly) {}
+
+  hasChildNodes() {
+    return this.children.length > 0
+  }
+
+  // TODO:
+  cloneNode() {
+    return
+  }
+
+  // TODO:
+  inserBefore(node, childNode) {
+    return
+  }
+
+  // TODO:
+  replaceChild(node, childNode) {
+    return
   }
 
   appendChild(node) {
@@ -322,8 +358,8 @@ class Node {
 }
 
 class Element extends Node {
-  constructor(type, reset) {
-    super(type)
+  constructor(type, reset, nodeType) {
+    super(type, nodeType || NODE_TYPES.ELEMENT)
     this.style = createStyleBinding(this[BINDING].id)
     Object.defineProperty(this, LISTENERS, {
       value: new Map(),
@@ -392,6 +428,19 @@ class Element extends Node {
     }
 
     return result
+  }
+
+  // TODO:
+  querySelector(selector) {}
+
+  // TODO:
+  querySelectorAll(selector) {}
+
+  hasAttribute(key) {
+    if (typeof this[BINDING]?.getProp(key) !== 'undefined') {
+      return true
+    }
+    return false
   }
 
   setAttribute(key, value) {
@@ -464,13 +513,9 @@ class Element extends Node {
 
 class Text extends Node {
   constructor(data) {
-    super('#text')
+    super('#text', NODE_TYPES.TEXT_NODE)
     this[BINDING].create()
     this[BINDING].setProp('text', String(data))
-  }
-
-  get nodeType() {
-    return 3
   }
 
   set data(val) {
@@ -488,7 +533,7 @@ class Text extends Node {
 export class Document extends Element {
   constructor(rootTag) {
     ROOT_TAG = rootTag
-    super('#document', true)
+    super('#document', true, NODE_TYPES.DOCUMENT)
   }
 
   createElement(type) {
