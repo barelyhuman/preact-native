@@ -6,7 +6,7 @@ import {
   View,
   SafeAreaView,
 } from '@barelyhuman/preact-native/core'
-import { registerNativeDOM, createDOM } from '@barelyhuman/preact-native/dom'
+import { createDOM } from '@barelyhuman/preact-native/dom'
 import { Component, render, h } from 'preact'
 import { signal } from '@preact/signals'
 import { Alert } from 'react-native'
@@ -14,10 +14,6 @@ import { Alert } from 'react-native'
 let document
 
 function App({ rootTag }) {
-  // Register native components as dom compatible elements
-  registerNativeDOM()
-
-  // create a dom with the root container from react native
   document = createDOM(rootTag)
   global.document = document
   render(<TestRenderable />, document)
