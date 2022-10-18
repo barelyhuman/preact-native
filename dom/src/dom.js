@@ -5,6 +5,7 @@ import * as ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivat
 let ROOT_TAG
 
 const BINDING = Symbol.for('binding')
+const STYLE = Symbol.for('style')
 const CURRENT_STYLE = Symbol.for('current')
 const OWNER_NODE = Symbol.for('owner')
 const IS_TRUSTED = Symbol.for('isTrusted')
@@ -360,7 +361,6 @@ class Node {
 class Element extends Node {
   constructor(type, reset, nodeType) {
     super(type, nodeType || NODE_TYPES.ELEMENT)
-    this.style = createStyleBinding(this[BINDING].id)
     Object.defineProperty(this, LISTENERS, {
       value: new Map(),
     })
@@ -453,6 +453,19 @@ class Element extends Node {
 
   removeAttribute(key) {
     this[BINDING].removeProp(key)
+  }
+
+  set style(cssText) {
+    this[STYLE].cssText = String(cssText)
+  }
+
+  get style() {
+    let style = this[STYLE]
+    if (!style) {
+      style = createStyleBinding(this[BINDING].id)
+      this[STYLE] = style
+    }
+    return style
   }
 
   addEventListener(type, fn, options = {}) {
