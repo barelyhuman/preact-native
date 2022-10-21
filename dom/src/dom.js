@@ -95,77 +95,48 @@ export const bridge = {
         updateNodeProps(id)
         break
       }
-      case 'appendChild': {
+      case 'updateChildren': {
+        const oldChildren = params[1]
+        const nextSet = params[2]
+
+        const toDelete = []
+        const toCreate = []
+        const moveFrom = []
+        const moveTo = []
+
+        nextSet.forEach((nodeChild, ind) => {
+          const exists = oldChildren.findIndex(isSameChild, nodeChild)
+          if (exists == -1) {
+            toCreate.push([nodeChild[BINDING].id, ind])
+          }
+        })
+
+        oldChildren.forEach((nodeChild, ind) => {
+          const oldPos = ind
+          const newPos = nextSet.findIndex(isSameChild, nodeChild)
+          if (newPos == -1) {
+            toDelete.push(ind)
+          } else if (newPos !== oldPos) {
+            moveFrom.push(oldPos)
+            moveTo.push(newPos)
+          }
+        })
+
         let parentTag = id
-        const toAdd = params[1]
 
         if (binding.type === '#document') {
           parentTag = ROOT_TAG
         }
 
-        UIManager.setChildren(parentTag, [toAdd])
-
-        // TODO: benchmark between this and setting and fetching from a Map
-        // and change accordingly, slowing this down could cause a glitchy interface
-        const repositionExists = renderQ.findIndex(
-          x => x.method === 'repositionChildren' && x.params[0] == id
-        )
-
-        if (repositionExists > -1) {
-          renderQ.splice(repositionExists, 1)
-        }
-
-        // setChildren adds to the end but Native seems to be
-        // rendering in the bottom-up direction, reposition
-        // will just reverse the order and doesn't need to executed
-        // a hundered times or on each append so the above
-        // checks if there's already a task for this id in the queue
-        bridge.enqueue('repositionChildren', [id])
-
-        break
-      }
-      case 'repositionChildren': {
-        const from = []
-        const to = []
-        node.children.forEach((_, i) => {
-          const nextIndex = node.children.length - 1 - i
-          from.push(i)
-          to.push(nextIndex)
-        })
         UIManager.manageChildren(
-          id, // containerID
-          from, // moveFromIndices
-          to, // moveToIndices
-          [], // addChildReactTags
-          [], // addAtIndices
-          [] // removeAtIndices
+          parentTag, // containerID
+          moveFrom, // moveFromIndices
+          moveTo, // moveToIndices
+          toCreate.map(x => x[0]), // addChildReactTags
+          toCreate.map(x => x[1]), // addAtIndices
+          toDelete // removeAtIndices
         )
-        break
-      }
-      case 'moveChild': {
-        const moveFrom = params[1]
-        const moveTo = params[2]
-        // FIXME: breaks existing repositioning
-        // UIManager.manageChildren(
-        //   id, // containerID
-        //   [moveFrom], // moveFromIndices
-        //   [moveTo], // moveToIndices
-        //   [], // addChildReactTags
-        //   [], // addAtIndices
-        //   [] // removeAtIndices
-        // )
-        break
-      }
-      case 'removeChild': {
-        const removeAt = params[1]
-        UIManager.manageChildren(
-          id, // containerID
-          [], // moveFromIndices
-          [], // moveToIndices
-          [], // addChildReactTags
-          [], // addAtIndices
-          [removeAt] // removeAtIndices
-        )
+
         break
       }
       case 'event': {
@@ -308,17 +279,26 @@ class Node {
     return
   }
 
-  // TODO:
-  inserBefore(node, childNode) {
-    return
+  insertBefore(node, refNode) {
+    const old = this.children.slice()
+    const index = getChildIndex(this, refNode)
+    const before = this.children.slice(0, index)
+    const rest = this.children.slice(index)
+    node.parent = this
+    before.push(node)
+    this.children = [].concat(before, rest)
+    this[BINDING].updateChildren(old, this.children.slice())
   }
 
-  // TODO:
-  replaceChild(node, childNode) {
-    return
+  replaceChild(newChild, oldChild) {
+    const old = this.children.slice()
+    const index = getChildIndex(this, oldChild)
+    this.children[index] = newChild
+    this[BINDING].updateChildren(old, this.children.slice())
   }
 
   appendChild(node) {
+    const old = this.children.slice()
     node.parent = this
     const existingChild = this.children.findIndex(
       x => x[BINDING].id === node[BINDING].id
@@ -326,27 +306,19 @@ class Node {
     if (existingChild > -1) {
       this.children.splice(existingChild, 1)
       this.children.push(node)
-      this[BINDING].moveChild(
-        node[BINDING].id,
-        existingChild,
-        this.children.length - 1
-      )
+      this[BINDING].updateChildren(old, this.children.slice())
     } else {
       this.children.push(node)
-      this[BINDING].appendChild(node[BINDING].id)
+      this[BINDING].updateChildren(old, this.children.slice())
     }
   }
 
   removeChild(node) {
-    let index = -1
-    this.children.filter((x, i) => {
-      if (x[BINDING].id === node[BINDING].id) {
-        index = i
-      }
-      return x[BINDING].id !== node[BINDING].id
-    })
+    let old = this.children.slice()
+    const index = getChildIndex(this, node)
     if (index > -1) {
-      this[BINDING].removeChild(index)
+      this.children.splice(index, 1)
+      this[BINDING].updateChildren(old, this.children.slice())
     }
   }
 
@@ -612,6 +584,9 @@ function createBinding(node) {
     },
     appendChild(nodeId) {
       bridge.enqueue('appendChild', [id, nodeId])
+    },
+    updateChildren(old, next) {
+      bridge.enqueue('updateChildren', [id, old, next])
     },
     removeChild(atIndex) {
       bridge.enqueue('removeChild', [id, atIndex])
@@ -912,3 +887,11 @@ ReactNativePrivateInterface.RCTEventEmitter.register({
   receiveEvent: receiveEvent,
   receiveTouches: receiveTouches,
 })
+
+function getChildIndex(parent, toFind) {
+  return parent.children.findIndex(isSameChild, toFind)
+}
+
+function isSameChild(item) {
+  return item[BINDING].id === this[BINDING].id
+}
