@@ -16,7 +16,8 @@ let document
 function App({ rootTag }) {
   document = createDOM(rootTag)
   global.document = document
-  render(<TestRenderable />, document)
+  render(<Counter />, document)
+  return null
 }
 
 const count = signal(0)
