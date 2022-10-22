@@ -57,7 +57,9 @@ export class Binding {
     const type = eventInfo.type
     const bubbles = false
     const cancelable = false
+
     const event = new Event(type, bubbles, cancelable)
+
     event[IS_TRUSTED] = true
     event.nativeEvent = eventInfo.event
 

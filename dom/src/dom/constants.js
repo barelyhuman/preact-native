@@ -5,6 +5,7 @@ export const CURRENT_STYLE = Symbol.for('current')
 export const OWNER_NODE = Symbol.for('owner')
 export const IS_TRUSTED = Symbol.for('isTrusted')
 export const LISTENERS = Symbol.for('listeners')
+export const NS = Symbol.for('ns')
 
 export const KEYBOARD_EVENTS = ['topFocus', 'topEndEditing']
 export const FOCUS_EVENTS = ['topFocus']
@@ -19,6 +20,7 @@ export const NODE_TYPES = {
   ELEMENT: 1,
   TEXT_NODE: 3,
   DOCUMENT: 9,
+  DOCUMENT_FRAGMENT: 10,
 }
 
 export const EVENT_TYPES = {

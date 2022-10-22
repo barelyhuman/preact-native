@@ -5,6 +5,9 @@ export const TYPES = {
   '#document': {
     type: 'Document',
   },
+  '#fragment': {
+    type: 'DocumentFragment',
+  },
 }
 
 class Registry {
@@ -41,6 +44,12 @@ class Registry {
   clearBindings() {
     this.bindings.clear()
   }
+
+  get bindingsCount() {
+    return this.bindings.size
+  }
+
+  set bindingsCount(_readonly) {}
 
   allocateNewTag() {
     let nextTag = (this.currentBindingId += 1)

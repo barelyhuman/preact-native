@@ -1,9 +1,9 @@
-import { Document } from './dom/document'
 import { registry } from './dom/registry'
+import { Window } from './dom/window'
 
 export function createDOM(rootTag) {
   registry.reset()
   registry.root = rootTag
-  const rootNode = new Document()
-  return rootNode
+  var window = new Window()
+  return window.document
 }
