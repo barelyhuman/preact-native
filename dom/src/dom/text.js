@@ -1,8 +1,7 @@
-import { Node } from './node'
-
 import { BINDING, NODE_TYPES } from './constants'
+import { EventTarget } from './event-target'
 
-export class Text extends Node {
+export class Text extends EventTarget {
   constructor(data) {
     super('#text', NODE_TYPES.TEXT_NODE)
     this[BINDING].create()

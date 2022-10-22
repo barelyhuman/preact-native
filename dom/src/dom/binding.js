@@ -41,6 +41,10 @@ export class Binding {
     return this.props.get(key)
   }
 
+  removeProp(key) {
+    return this.props.delete(key)
+  }
+
   getAllProps() {
     const res = {}
     for (let [key, val] of Object.entries(this.props)) {

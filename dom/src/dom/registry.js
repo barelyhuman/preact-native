@@ -1,12 +1,19 @@
-export const TYPES = {
-  '#text': {
-    type: 'RCTRawText',
-  },
+export const FALSE_TYPES = {
   '#document': {
     type: 'Document',
   },
   '#fragment': {
     type: 'DocumentFragment',
+  },
+  'template': {
+    type: 'DocumentFragment',
+  },
+}
+
+export const TYPES = {
+  ...FALSE_TYPES,
+  '#text': {
+    type: 'RCTRawText',
   },
 }
 

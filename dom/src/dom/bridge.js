@@ -22,7 +22,7 @@ import {
   FOCUS_EVENTS,
   KEYBOARD_EVENTS,
 } from './constants'
-import { registry, TYPES } from './registry'
+import { FALSE_TYPES, registry, TYPES } from './registry'
 import { isSameChild } from './utils'
 
 class Bridge {
@@ -79,7 +79,7 @@ class Bridge {
       }
       case 'create': {
         const type = params[1]
-        if (type === '#document') {
+        if (Object.keys(FALSE_TYPES).indexOf(type) > -1) {
           break
         }
         const rawViewClass = TYPES[type]

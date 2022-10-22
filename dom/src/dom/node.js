@@ -60,6 +60,14 @@ export class Node {
   }
 
   insertBefore(node, refNode) {
+    if (!node) {
+      return
+    }
+
+    if (!refNode) {
+      return this.appendChild(node)
+    }
+
     const old = this.children.slice()
     const index = getChildIndex(this, refNode)
     const before = this.children.slice(0, index)

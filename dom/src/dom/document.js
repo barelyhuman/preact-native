@@ -33,6 +33,9 @@ export class Document extends Element {
     return new Event('')
   }
 
+  // TODO:
+  createComment() {}
+
   createElementNS(localName, nsURI) {
     if (nsURI.contains('2000 / svg') > -1) {
       return new SVGElement(localName)

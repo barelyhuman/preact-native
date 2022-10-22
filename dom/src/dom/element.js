@@ -1,5 +1,6 @@
 import {
   BINDING,
+  BINDING_NODE,
   CURRENT_STYLE,
   EVENTPHASE_AT_TARGET,
   EVENTPHASE_BUBBLE,
@@ -11,6 +12,8 @@ import {
   STYLE,
 } from './constants'
 import { EventTarget } from './event-target'
+import { registry } from './registry'
+import { Text } from './text'
 
 export class Element extends EventTarget {
   [NS] = 'http://www.w3.org/1999/xhtml'
@@ -124,12 +127,12 @@ export class Element extends EventTarget {
 
 function createStyleBinding(id) {
   let style = {}
-  // const binding = BINDINGS.get(id)
-  // Object.defineProperty(style, CURRENT_STYLE, { value: new Map() })
-  // Object.defineProperty(style, OWNER_NODE, {
-  //   get: NODES.get.bind(NODES, binding),
-  // })
-  // return new Proxy(style, STYLE_PROXY)
+  const binding = registry.getBinding(id)
+  Object.defineProperty(style, CURRENT_STYLE, { value: new Map() })
+  Object.defineProperty(style, OWNER_NODE, {
+    get: () => binding[BINDING_NODE],
+  })
+  return new Proxy(style, STYLE_PROXY)
 }
 
 const STYLE_PROXY = {
