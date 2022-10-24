@@ -43,6 +43,9 @@ import { SafeAreaView, View, Text, TextInput } from '@barelyhuman/preact-native'
 4. Once the above is setup, you can just go ahead and write preact components as
    usual.
 
+> **Note**: instead of `preact/hooks` please use `@preact/signals` for the time
+> being, once fixed this note will be removed
+
 **Eg:**
 
 ```js
