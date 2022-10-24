@@ -5,47 +5,30 @@
   "bugs": "https://github.com/barelyhuman/preact-native/issues",
   "repository": "barelyhuman/preact-native",
   "license": "MIT",
-  "author": "",
-  "main": "./core/dist/core.js",
-  "module": "./core/dist/core.mjs",
-  "types": "./core/src/core.d.ts",
+  "author": "barelyhuman <ahoy@barelyhuman.dev>",
   "exports": {
-    ".": {
-      "types": "./core/src/core.d.ts",
-      "browser": "./core/dist/core.module.js",
-      "umd": "./core/dist/core.umd.js",
-      "import": "./core/dist/core.mjs",
-      "require": "./core/dist/core.js"
-    },
-    "./dom": {
-      "types": "./dom/src/index.d.ts",
-      "browser": "./dom/dist/index.module.js",
-      "umd": "./dom/dist/index.umd.js",
-      "import": "./dom/dist/index.mjs",
-      "require": "./dom/dist/index.js"
-    },
+    "./*": "./src/*",
     "./package.json": "./package.json"
   },
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "engines": {
+    "node": "^12 || ^14 || >=16"
+  },
   "files": [
-    "core/src",
-    "core/dist",
-    "dom/src",
-    "dom/dist"
+    "src",
+    "types"
   ],
   "scripts": {
     "nuke": "find . -name 'node_modules' -type d -prune | xargs rm -rf",
-    "build": "npm-run-all --parallel build:*",
-    "build:dom": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd dom",
-    "build:core": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd core",
-    "dev": "npm-run-all --parallel dev:*",
-    "dev:dom": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd dom --watch",
-    "dev:core": "microbundle build --raw --no-generateTypes -f cjs,esm,umd --cwd core --watch",
+    "prepare": "tsc; husky install",
     "example:start": "cd example;yarn start",
     "example:ios": "cd example; yarn ios",
     "example:android": "cd example; yarn android",
     "fix": "npx prettier --write .",
     "next": "bumpp --tag --commit",
-    "prepare": "husky install"
+    "preversion": "tsc"
   },
   "lint-staged": {
     "*.{js,mjs,ts,tsx,json,md}": [
@@ -53,10 +36,6 @@
     ]
   },
   "prettier": "@barelyhuman/prettier-config",
-  "dependencies": {
-    "@preact/signals": "^1.1.2",
-    "vue": "^3.2.41"
-  },
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
     "bumpp": "^8.2.1",
@@ -66,11 +45,10 @@
     "npm-run-all": "^4.1.5",
     "preact": "^10.11.0",
     "prettier": "^2.7.1",
-    "react": "^18.2.0",
-    "react-native": "^0.70.1"
+    "react-native": "^0.70.1",
+    "typescript": "^4.8.4"
   },
   "peerDependencies": {
-    "dom": "*",
     "preact": ">10",
     "react": ">=17",
     "react-native": ">=0.65"

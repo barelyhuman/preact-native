@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@barelyhuman/preact-native": "*",
+    "@preact/signals": "^1.1.2",
     "preact": "^10.11.1",
     "react": "18.1.0",
-    "react-native": "0.70.1"
+    "react-native": "0.70.1",
+    "vue": "^3.2.41"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

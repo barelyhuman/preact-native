@@ -1,25 +1,14 @@
 /** @jsxImportSource preact */
 
-import {
-  TextInput,
-  Text,
-  View,
-  SafeAreaView,
-} from '@barelyhuman/preact-native/core'
-import { createDOM } from '@barelyhuman/preact-native/dom'
-import { Component, render } from 'preact'
+import { TextInput, Text, View, SafeAreaView } from '@barelyhuman/preact-native'
+import { Component } from 'preact'
 import { signal } from '@preact/signals'
 import { Alert } from 'react-native'
 import { createApp, h as vueJSX } from 'vue'
 
-let document
-
-function App({ rootTag }) {
-  document = createDOM(rootTag)
-  global.document = document
-  render(<Counter />, document)
+function App() {
   // VueCounter()
-  return null
+  return <Counter />
 }
 
 // FIXME: event handlers compat for vue

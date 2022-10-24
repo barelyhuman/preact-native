@@ -1,0 +1,18 @@
+{
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "strict": true,
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "types"
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "node_modules",
+    "./node_modules",
+    "./node_modules/*"
+  ]
+}
