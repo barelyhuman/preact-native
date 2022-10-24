@@ -1,5 +1,5 @@
 import { Binding } from './binding'
-import { BINDING } from './constants'
+import { BINDING, IS_REMOVED } from './constants'
 import { registry } from './registry'
 import { getChildIndex } from './utils'
 
@@ -68,6 +68,10 @@ export class Node {
       return this.appendChild(node)
     }
 
+    if (node[BINDING][IS_REMOVED]) {
+      node[BINDING].rebuildTree()
+    }
+
     const old = this.children.slice()
     const index = getChildIndex(this, refNode)
     const exists = getChildIndex(this, node)
@@ -95,6 +99,11 @@ export class Node {
     const existingChild = this.children.findIndex(
       x => x[BINDING].id === node[BINDING].id
     )
+
+    if (node[BINDING][IS_REMOVED]) {
+      node[BINDING].rebuildTree()
+    }
+
     if (existingChild > -1) {
       this.children.splice(existingChild, 1)
       this.children.push(node)
@@ -111,8 +120,8 @@ export class Node {
     const index = getChildIndex(this, node)
     if (index > -1) {
       current.splice(index, 1)
+      node[BINDING][IS_REMOVED] = true
       this[BINDING].updateChildren(old, current.slice())
-      node[BINDING].reCreate()
       this.children = current.slice()
     }
   }
@@ -120,6 +129,7 @@ export class Node {
   get ref() {
     return this._nativeInstance
   }
+
   set ref(node) {
     this._nativeInstance = node
   }

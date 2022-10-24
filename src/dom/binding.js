@@ -9,7 +9,13 @@
 
 import { bridge } from './bridge'
 import { Event } from './event'
-import { BINDING_NODE, IS_TRUSTED, EVENT_TYPES, BINDING } from './constants'
+import {
+  BINDING_NODE,
+  IS_TRUSTED,
+  EVENT_TYPES,
+  BINDING,
+  IS_REMOVED,
+} from './constants'
 import { registry } from './registry'
 
 export class Binding {
@@ -18,6 +24,7 @@ export class Binding {
 
   constructor(node) {
     this.props = new Map()
+    this[IS_REMOVED] = false
     this[BINDING_NODE] = node
     this.id = registry.allocateNewTag()
     this.bridge = bridge
@@ -32,15 +39,21 @@ export class Binding {
     this.bridge.enqueue('create', [this.id, this[BINDING_NODE].localName])
   }
 
-  reCreate() {
+  // react native has no information of whether a node is still
+  // needed or not, so conditional nodes can be added and removed at
+  // will , so if the node is added (appendChild or insertBefore) again,
+  // rebuild the nodal tree
+  rebuildTree() {
     const _node = this[BINDING_NODE]
     this.bridge.enqueue('create', [this.id, _node.localName])
+
     for (let [k, v] of this.props) {
       this.bridge.enqueue('setProp', [this.id, k, v])
     }
+
     _node.children.forEach(x => {
       _node.removeChild(x)
-      x[BINDING].reCreate()
+      if (x[BINDING][IS_REMOVED]) x[BINDING].rebuildTree()
       _node.appendChild(x)
     })
   }
@@ -65,9 +78,11 @@ export class Binding {
     }
     return res
   }
+
   appendChild(toAdd) {
     this.bridge.enqueue('appendChild', [this.id, toAdd])
   }
+
   updateChildren(old, next) {
     this.bridge.enqueue('updateChildren', [this.id, old, next])
   }
