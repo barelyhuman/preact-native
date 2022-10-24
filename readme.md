@@ -19,42 +19,51 @@ $ npm install @barelyhuman/preact-native preact
 ## Usage
 
 1. Setup a base react native project using `npx react-native init`
-2. Change the App.js to this
+2. Change `index.js` to include the `withPreact` from the library
 
 ```js
-import { createDOM, registerNativeDOM } from '@barelyhuman/preact-native/dom'
-import { Component, h, render } from 'preact'
+/**
+ * @format
+ */
+import { AppRegistry } from 'react-native'
+import App from './App'
+import { name as appName } from './app.json'
+import { withPreact } from '@barelyhuman/preact-native'
 
-let document
+AppRegistry.registerComponent(appName, () => withPreact(App))
+```
 
-function App({ rootTag }) {
-  // Register native components as dom compatible elements
-  registerNativeDOM()
-  // create a dom with the root container from react native
-  document = createDOM(rootTag)
-  global.document = document
-  // render a preact component to the above DOM
-  render(h(RenderableComponent, {}), document)
-  return null
+3. Then add the following to the top of the `App.js` file
+
+```js
+/** @jsxImportSource preact */
+import { SafeAreaView, View, Text, TextInput } from '@barelyhuman/preact-native'
+```
+
+4. Once the above is setup, you can just go ahead and write preact components as
+   usual.
+
+**Eg:**
+
+```js
+/** @jsxImportSource preact */
+import { SafeAreaView, View, Text } from '@barelyhuman/preact-native'
+
+export default function App() {
+  return <Home />
 }
 
-class RenderableComponent extends Component {
-  state = {
-    count: 0,
-  }
-
-  componentDidMount() {
-    setInterval(() => {
-      this.setState({ count: this.state.count + 1 })
-    }, 1000)
-  }
-
-  render() {
-    return h('SafeAreaView', {}, h('Text', {}, `Count ${this.state.count}`))
-  }
+function Home() {
+  return (
+    <>
+      <SafeAreaView>
+        <View>
+          <Text color={'red'}>Hello</Text>
+        </View>
+      </SafeAreaView>
+    </>
+  )
 }
-
-export default App
 ```
 
 > **Note**: All react related stuff (react as a dep and render tree needing
@@ -65,18 +74,18 @@ export default App
 ## Roadmap
 
 - [x] A minimal dom
-- [ ] Create views from the bridge instead of rendering with react
+- [x] Create views from the bridge instead of rendering with react
   - [x] Create native views (Views created on the iOS and Android platform APIs)
-  - [ ] Create derived views (Views created on top of the above by manipulating
+  - [x] Create derived views (Views created on top of the above by manipulating
         the SDK)
 - [x] Update view styles from the bridge
 - [x] Update text nodes from the bridge
-- [ ] Add compat for preact to make it possible for preact to diff and render
+- [x] Add compat for preact to make it possible for preact to diff and render
       without the need for a react tree generator
       `import {render} from "preact-native/dom"`
 - [ ] Handle events (presses, input, gestures) , aka events from preact will be
       on the DOM, need to be proxied as events to the Native SDK
-- [ ] Handling for Bridge level style props
+- [x] Handling for Bridge level style props
 
 ## Contribute
 
