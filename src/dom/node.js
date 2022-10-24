@@ -70,6 +70,10 @@ export class Node {
 
     const old = this.children.slice()
     const index = getChildIndex(this, refNode)
+    const exists = getChildIndex(this, node)
+    if (exists > -1) {
+      this.children.splice(exists, 1)
+    }
     const before = this.children.slice(0, index)
     const rest = this.children.slice(index)
     node.parent = this
@@ -102,11 +106,14 @@ export class Node {
   }
 
   removeChild(node) {
-    let old = this.children.slice()
+    const current = this.children.slice()
+    let old = current.slice()
     const index = getChildIndex(this, node)
     if (index > -1) {
-      this.children.splice(index, 1)
-      this[BINDING].updateChildren(old, this.children.slice())
+      current.splice(index, 1)
+      this[BINDING].updateChildren(old, current.slice())
+      node[BINDING].reCreate()
+      this.children = current.slice()
     }
   }
 

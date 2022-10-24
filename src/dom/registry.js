@@ -18,12 +18,13 @@ export const TYPES = {
 }
 
 class Registry {
-  currentBindingId = 0
+  currentBindingId
   bindings
   _rootTag
 
   constructor() {
-    this.currentBindingId = 0
+    // 0 is considered as root in react-native
+    this.currentBindingId = 2
     this.bindings = new Map()
   }
 

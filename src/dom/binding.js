@@ -9,7 +9,7 @@
 
 import { bridge } from './bridge'
 import { Event } from './event'
-import { BINDING_NODE, IS_TRUSTED, EVENT_TYPES } from './constants'
+import { BINDING_NODE, IS_TRUSTED, EVENT_TYPES, BINDING } from './constants'
 import { registry } from './registry'
 
 export class Binding {
@@ -32,6 +32,19 @@ export class Binding {
     this.bridge.enqueue('create', [this.id, this[BINDING_NODE].localName])
   }
 
+  reCreate() {
+    const _node = this[BINDING_NODE]
+    this.bridge.enqueue('create', [this.id, _node.localName])
+    for (let [k, v] of this.props) {
+      this.bridge.enqueue('setProp', [this.id, k, v])
+    }
+    _node.children.forEach(x => {
+      _node.removeChild(x)
+      x[BINDING].reCreate()
+      _node.appendChild(x)
+    })
+  }
+
   setProp(key, val) {
     this.props.set(key, val)
     this.bridge.enqueue('setProp', [this.id, key, val])
@@ -52,7 +65,9 @@ export class Binding {
     }
     return res
   }
-
+  appendChild(toAdd) {
+    this.bridge.enqueue('appendChild', [this.id, toAdd])
+  }
   updateChildren(old, next) {
     this.bridge.enqueue('updateChildren', [this.id, old, next])
   }
