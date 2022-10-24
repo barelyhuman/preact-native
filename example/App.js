@@ -44,9 +44,14 @@ function VueCounter() {
 const count = signal(0)
 
 function Counter() {
-  const handleClick = e => {
+  const handleInc = e => {
     e.stopPropagation()
-    count.value += 1
+    count.value++
+  }
+
+  const handleDec = e => {
+    e.stopPropagation()
+    count.value--
   }
 
   return (
@@ -56,18 +61,32 @@ function Counter() {
           <Text fontSize={30} margin={10} color="white">
             {count.value}
           </Text>
-          {/* Additional view to force check bubbling */}
           <View>
             <View
-              onClick={handleClick}
+              onClick={handleInc}
               borderRadius={6}
               width={250}
+              margin={10}
               backgroundColor={'#333'}
               alignItems="center"
               justifyContent="center"
             >
               <Text fontSize={30} margin={10} color="white">
-                Inc
+                +
+              </Text>
+            </View>
+
+            <View
+              onClick={handleDec}
+              borderRadius={6}
+              width={250}
+              margin={10}
+              backgroundColor={'#333'}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize={30} margin={10} color="white">
+                -
               </Text>
             </View>
           </View>
