@@ -1,6 +1,6 @@
 {
   "name": "@barelyhuman/preact-native",
-  "version": "0.1.1-beta.4",
+  "version": "0.1.1-beta.6",
   "description": "",
   "bugs": "https://github.com/barelyhuman/preact-native/issues",
   "repository": "barelyhuman/preact-native",
@@ -54,7 +54,8 @@
   },
   "prettier": "@barelyhuman/prettier-config",
   "dependencies": {
-    "@preact/signals": "^1.1.2"
+    "@preact/signals": "^1.1.2",
+    "vue": "^3.2.41"
   },
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",

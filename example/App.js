@@ -7,16 +7,49 @@ import {
   SafeAreaView,
 } from '@barelyhuman/preact-native/core'
 import { createDOM } from '@barelyhuman/preact-native/dom'
-import { Component, render, h } from 'preact'
+import { Component, render } from 'preact'
 import { signal } from '@preact/signals'
 import { Alert } from 'react-native'
+import { createApp, h as vueJSX } from 'vue'
 
 let document
 
 function App({ rootTag }) {
   document = createDOM(rootTag)
   global.document = document
-  render(<TestRenderable />, document)
+  render(<Counter />, document)
+  // VueCounter()
+  return null
+}
+
+// FIXME: event handlers compat for vue
+function VueCounter() {
+  const saView = document.createElement('SafeAreaView')
+  document.appendChild(saView)
+
+  const app = createApp({
+    data() {
+      return {
+        count: 0,
+      }
+    },
+    render() {
+      return vueJSX(
+        'View',
+        {
+          style: {
+            backgroundColor: '#333',
+            height: 52,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 6,
+          },
+        },
+        vueJSX('Text', { style: { color: 'white' } }, this.count)
+      )
+    },
+  })
+  app.mount(saView)
 }
 
 const count = signal(0)
@@ -30,15 +63,24 @@ function Counter() {
   return (
     <>
       <SafeAreaView>
-        <Text fontSize={20} margin={10} color="white">
-          {count.value}
-        </Text>
-        {/* Additional view to force check bubbling */}
-        <View>
-          <View onClick={handleClick}>
-            <Text fontSize={20} margin={10} color="white">
-              Inc
-            </Text>
+        <View alignItems="center" justifyContent="center">
+          <Text fontSize={30} margin={10} color="white">
+            {count.value}
+          </Text>
+          {/* Additional view to force check bubbling */}
+          <View>
+            <View
+              onClick={handleClick}
+              borderRadius={6}
+              width={250}
+              backgroundColor={'#333'}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Text fontSize={30} margin={10} color="white">
+                Inc
+              </Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>

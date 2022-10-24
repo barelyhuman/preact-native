@@ -1,5 +1,5 @@
-import { registerHostElement } from './dom'
 import * as UIManager from 'react-native/Libraries/ReactNative/UIManager'
+import { registry } from './dom/registry'
 
 const ITEMS = []
 
@@ -10,5 +10,11 @@ export function registerNativeDOM() {
     ITEMS.push([withoutNativeName, constName])
   })
 
-  ITEMS.forEach(x => registerHostElement(x[0], x[1], x[2]))
+  ITEMS.forEach(hostComponentDef =>
+    registry.registerHostElement(
+      hostComponentDef[0],
+      hostComponentDef[1],
+      hostComponentDef[2]
+    )
+  )
 }
