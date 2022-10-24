@@ -20,7 +20,7 @@ export const NODE_TYPES = {
   ELEMENT: 1,
   TEXT_NODE: 3,
   DOCUMENT: 9,
-  DOCUMENT_FRAGMENT: 10,
+  DOCUMENT_FRAGMENT: 11,
 }
 
 export const EVENT_TYPES = {
