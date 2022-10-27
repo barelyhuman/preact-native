@@ -115,15 +115,16 @@ export class Node {
   }
 
   removeChild(node) {
+    if (!node) return
     const current = this.children.slice()
     let old = current.slice()
     const index = getChildIndex(this, node)
-    if (index > -1) {
-      current.splice(index, 1)
-      node[BINDING][IS_REMOVED] = true
-      this[BINDING].updateChildren(old, current.slice())
-      this.children = current.slice()
-    }
+    if (index === -1) return
+
+    current.splice(index, 1)
+    node[BINDING][IS_REMOVED] = true
+    this.children = current.slice()
+    this[BINDING].updateChildren(old, current.slice())
   }
 
   get ref() {
