@@ -21,10 +21,12 @@ class Registry {
   currentBindingId
   bindings
   _rootTag
+  defaultBindingId = 4
+  defaultIncrementCount = 4
 
   constructor() {
     // 0 is considered as root in react-native
-    this.currentBindingId = 2
+    this.currentBindingId = this.defaultBindingId
     this.bindings = new Map()
   }
 
@@ -37,7 +39,7 @@ class Registry {
   }
 
   reset() {
-    this.currentBindingId = 0
+    this.currentBindingId = this.defaultBindingId
     this.clearBindings()
   }
 
@@ -60,12 +62,17 @@ class Registry {
   set bindingsCount(_readonly) {}
 
   allocateNewTag() {
-    let nextTag = (this.currentBindingId += 1)
+    // 2 and 10 are used to identify views in react and the tags
+    // could clash so we use 4, would use a hash but then the SDK doesn't
+    // allow strings
+    const inc = this.defaultIncrementCount
+    let nextTag = (this.currentBindingId += inc)
     if (nextTag === this._rootTag) {
-      nextTag += 1
+      nextTag += inc
     }
     return nextTag
   }
+
   registerHostElement(componentName, nativeComp, options = {}) {
     if (options.nativeHost) {
       TYPES[componentName] = {
