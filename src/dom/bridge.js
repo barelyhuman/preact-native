@@ -383,9 +383,9 @@ function process() {
   let methodDef = q.shift()
   if (methodDef) {
     dispatch.call(this, methodDef)
-    setTimeout(() => {
-      process.call(this)
-    }, 1)
+    // setTimeout(() => {
+    process.call(this)
+    // }, 1)
   } else {
     this.processing = false
   }
