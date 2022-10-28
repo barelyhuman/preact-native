@@ -10,7 +10,6 @@
  *
  */
 
-import * as UIManager from 'react-native/Libraries/ReactNative/UIManager'
 import getNativeComponentAttributes from 'react-native/Libraries/ReactNative/getNativeComponentAttributes'
 import * as ReactNativePrivateInterface from 'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface'
 
@@ -73,7 +72,14 @@ class Bridge {
       case 'clear': {
         const childIndices = (node.childNodes || []).map((_, i) => i)
         try {
-          UIManager.manageChildren(ROOT_TAG, [], [], [], [], childIndices)
+          ReactNativePrivateInterface.UIManager.manageChildren(
+            ROOT_TAG,
+            [],
+            [],
+            [],
+            [],
+            childIndices
+          )
         } catch (err) {}
         break
       }
@@ -85,11 +91,21 @@ class Bridge {
         const rawViewClass = TYPES[type]
 
         if (type === '#text') {
-          UIManager.createView(binding.id, 'RCTRawText', ROOT_TAG, {
-            text: binding.getProp('text'),
-          })
+          ReactNativePrivateInterface.UIManager.createView(
+            binding.id,
+            'RCTRawText',
+            ROOT_TAG,
+            {
+              text: binding.getProp('text'),
+            }
+          )
         } else {
-          UIManager.createView(binding.id, rawViewClass.type, ROOT_TAG, {})
+          ReactNativePrivateInterface.UIManager.createView(
+            binding.id,
+            rawViewClass.type,
+            ROOT_TAG,
+            {}
+          )
         }
 
         break
@@ -107,19 +123,22 @@ class Bridge {
 
         const toDelete = []
         const toCreate = []
+        const toCreateAt = []
         const moveFrom = []
         const moveTo = []
 
         nextSet.forEach((nodeChild, ind) => {
           const exists = oldChildren.findIndex(isSameChild, nodeChild)
           if (exists == -1) {
-            toCreate.push([nodeChild[BINDING].id, ind])
+            toCreate.push(nodeChild[BINDING].id)
+            toCreateAt.push(ind)
           }
         })
 
         oldChildren.forEach((nodeChild, ind) => {
           const oldPos = ind
           const newPos = nextSet.findIndex(isSameChild, nodeChild)
+
           if (newPos == -1) {
             toDelete.push(ind)
           } else if (newPos !== oldPos) {
@@ -134,12 +153,14 @@ class Bridge {
           parentTag = ROOT_TAG
         }
 
-        UIManager.manageChildren(
+        // if conflicting indices between create and move,
+        // add the child at a later index and then to the remaining
+        ReactNativePrivateInterface.UIManager.manageChildren(
           parentTag, // containerID
           moveFrom, // moveFromIndices
           moveTo, // moveToIndices
-          toCreate.map(x => x[0]), // addChildReactTags
-          toCreate.map(x => x[1]), // addAtIndices
+          toCreate, // addChildReactTags
+          toCreateAt, // addAtIndices
           toDelete // removeAtIndices
         )
 
@@ -217,7 +238,7 @@ class Bridge {
 
 function updateTextNode(id) {
   const binding = registry.getBinding(id)
-  UIManager.updateView(id, 'RCTRawText', {
+  ReactNativePrivateInterface.UIManager.updateView(id, 'RCTRawText', {
     text: binding.getProp('text'),
   })
 }
@@ -230,7 +251,11 @@ function updateNodeProps(id) {
     const managerName = TYPES[binding.type].type
     const viewConfig = getNativeComponentAttributes(managerName)
     const validProps = processProps(props, viewConfig.validAttributes)
-    UIManager.updateView(id, viewConfig.uiViewClassName, validProps)
+    ReactNativePrivateInterface.UIManager.updateView(
+      id,
+      viewConfig.uiViewClassName,
+      validProps
+    )
   }
 }
 
@@ -358,9 +383,9 @@ function process() {
   let methodDef = q.shift()
   if (methodDef) {
     dispatch.call(this, methodDef)
-    setTimeout(() => {
-      process.call(this)
-    }, 10)
+    // setTimeout(() => {
+    process.call(this)
+    // }, 1)
   } else {
     this.processing = false
   }

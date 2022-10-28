@@ -2,6 +2,7 @@ import {
   EVENTPHASE_AT_TARGET,
   EVENTPHASE_BUBBLE,
   EVENTPHASE_CAPTURE,
+  EVENT_TYPES,
   LISTENERS,
 } from './constants'
 import { Node } from './node'
@@ -14,10 +15,28 @@ export class EventTarget extends Node {
   addEventListener(type, fn, options = {}) {
     const all = this[LISTENERS]
     let list = all.get(type)
+    let proxyEventList
+
+    const preactEventType = Object.values(EVENT_TYPES).find(
+      x => x.toLowerCase() === type.toLowerCase()
+    )
+
+    if (type !== preactEventType) {
+      proxyEventList = all.get(preactEventType)
+      if (!proxyEventList) {
+        all.set(preactEventType, (proxyEventList = []))
+      }
+    }
+
     if (!list) {
       all.set(type, (list = []))
     }
+
     list.push({
+      _listener: fn,
+    })
+
+    proxyEventList?.push({
       _listener: fn,
     })
   }
@@ -72,7 +91,7 @@ export class EventTarget extends Node {
 }
 
 function fireEvent(event, target, phase) {
-  const list = target[LISTENERS].get(event.type)
+  let list = target[LISTENERS].get(event.type)
   if (!list) return
 
   let defaultPrevented = false

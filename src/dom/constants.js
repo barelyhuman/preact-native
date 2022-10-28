@@ -6,6 +6,7 @@ export const OWNER_NODE = Symbol.for('owner')
 export const IS_TRUSTED = Symbol.for('isTrusted')
 export const LISTENERS = Symbol.for('listeners')
 export const NS = Symbol.for('ns')
+export const IS_REMOVED = Symbol.for('IS_REMOVED')
 
 export const KEYBOARD_EVENTS = ['topFocus', 'topEndEditing']
 export const FOCUS_EVENTS = ['topFocus']
@@ -23,6 +24,9 @@ export const NODE_TYPES = {
   DOCUMENT_FRAGMENT: 11,
 }
 
+// As per what preact would name them
+// since the DOM versions are just lowercase values
+// of these
 export const EVENT_TYPES = {
   CLICK: 'Click',
   CHANGE: 'Change',
