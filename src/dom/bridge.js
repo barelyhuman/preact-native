@@ -88,8 +88,8 @@ class Bridge {
         if (Object.keys(FALSE_TYPES).indexOf(type) > -1) {
           break
         }
-        const rawViewClass = TYPES[type]
 
+        const rawViewClass = TYPES[type]
         if (type === '#text') {
           ReactNativePrivateInterface.UIManager.createView(
             binding.id,
@@ -153,8 +153,6 @@ class Bridge {
           parentTag = ROOT_TAG
         }
 
-        // if conflicting indices between create and move,
-        // add the child at a later index and then to the remaining
         ReactNativePrivateInterface.UIManager.manageChildren(
           parentTag, // containerID
           moveFrom, // moveFromIndices
@@ -167,6 +165,7 @@ class Bridge {
         break
       }
       case 'event': {
+        const targetId = params[0]
         this.handleEvent('event', params)
         break
       }
@@ -363,6 +362,9 @@ function receiveTouches(eventTopLevelType, touches, changedIndices) {
     return
   }
 
+  if (nodeId === registry.root) {
+    return
+  }
   executeTouchEvent.call(this, nodeId, eventTopLevelType, nativeEvent)
 }
 
@@ -378,14 +380,18 @@ function executeKeyboardEvent(nodeId, eventTopLevelType, nativeEvent = {}) {
   this.enqueue('event', [nodeId, eventTopLevelType, nativeEvent])
 }
 
+// TODO: if used somewhere else, add to
+// a shared folder
+const microTask = fn => setTimeout(fn, 1)
+
 function process() {
   const q = this.queue || []
   let methodDef = q.shift()
   if (methodDef) {
     dispatch.call(this, methodDef)
-    // setTimeout(() => {
-    process.call(this)
-    // }, 1)
+    microTask(() => {
+      process.call(this)
+    })
   } else {
     this.processing = false
   }

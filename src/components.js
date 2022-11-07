@@ -1,7 +1,12 @@
+import { Platform } from 'react-native'
 import { h } from 'preact'
 
 export function SafeAreaView({ ...props }) {
-  return h('SafeAreaView', props)
+  let compName = 'SafeAreaView'
+  if (Platform.OS === 'android') {
+    compName = 'View'
+  }
+  return h(compName, props)
 }
 
 export function View({ ...props }) {

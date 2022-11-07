@@ -1,7 +1,14 @@
+import { Platform } from 'react-native'
+
 export default function DomApp() {
   let count = 0
+  let saView
+  if (Platform.OS === 'android') {
+    saView = document.createElement('View')
+  } else {
+    saView = document.createElement('SafeAreaView')
+  }
 
-  const saView = document.createElement('SafeAreaView')
   const view = document.createElement('View')
   const text = document.createElement('Text')
   text.textContent = count
