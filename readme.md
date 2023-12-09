@@ -3,7 +3,7 @@
 > **Warning**: This is an experimental approach at creating a renderer for
 > preact
 
-> **Note**: untill this reaches v1.0.0, the entire featureset might change,
+> **Note**: until this reaches v1.0.0, the entire featureset might change,
 > since we are still figuring out what works best
 
 I wouldn't really recommend using this for production but putting down the base
